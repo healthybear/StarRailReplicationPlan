@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "e:\\workspace\\StarRailReplicationPlan\\docs\\UI-UX"
+    ],
+    "allow": [
+      "Bash(\"e:\\\\workspace\\\\StarRailReplicationPlan\\\\docs\\\\Phase1-开发落地方案.md\":*)"
+    ]
+  }
+}
