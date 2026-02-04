@@ -1,0 +1,394 @@
+<html style="margin: 0; padding: 0; width: 100%; height: 100%;"><head>
+        <meta charset="uft-8">
+        <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    
+      
+    <script id="he-diagram-proxy" class="__helper-box">
+      
+  function escape(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          "'": '&#39;',
+          '"': '&quot;'
+        }[tag] || tag));
+    }
+    
+  function unescape(str) {
+    const map = {
+      '&amp;': '&',
+      '&lt;': '<',
+      '&gt;': '>',
+      '&#39;': "'",
+      '&quot;': '"'
+    };
+    return str.replace(/&(amp|lt|gt|#39|quot);/g, 
+      match => map[match]);
+  }
+  
+  function sendMessage2Parent(action) {
+    window.parent.postMessage(action, '*');
+  }
+
+      
+      const cdn = 'https://lf-coze-web-cdn.coze.cn/obj/coze-web-cn/coze-drawio/index.26b84e9.html';
+      
+      
+    document.addEventListener('DOMContentLoaded', () => {
+        const diagramDivs = document.querySelectorAll('div[data-he-diagram]');
+        diagramDivs.forEach(diagramDiv => {
+          const iframe = diagramDiv.querySelector('iframe[data-he-frame]');
+          const codeDiv = diagramDiv.querySelector('div[data-he-code]');
+         
+          if (iframe && codeDiv) {
+            // 发送消息方法，与use-message保持一致
+            const sendMessage = (action) => {
+              if (!iframe.contentWindow) {
+                console.warn('Iframe not ready');
+                return;
+              }
+
+              try {
+                const message = JSON.stringify(action);
+                iframe.contentWindow.postMessage(
+                  message,
+                  cdn
+                );
+              } catch (error) {
+                console.error('Failed to send message to draw.io:', error);
+              }
+            };
+            
+            // 为iframe添加唯一标识
+            const iframeId = Math.random().toString(36).substring(2);
+            iframe.dataset.iframeId = iframeId;
+            codeDiv.dataset.iframeId = iframeId;
+
+            // 处理init事件
+            const handleInit = () => {
+              const xml = unescape(codeDiv.innerHTML);
+              sendMessage({
+                action: 'load',
+                xml: xml,
+                autosave: 1
+              });
+            };
+            
+            const handleConfigure = () => {
+              sendMessage({
+                action: 'configure',
+                config: {
+                  defaultFonts: ['Arial', 'Helvetica', 'sans-serif'],
+                  css: `
+.geEditor > .geTabContainer {
+  display: none;
+}
+
+.geSidebarFooter {
+  display: none;
+}
+
+.geMenubarContainer {
+  display: none;
+}
+
+.geMenubar {
+  display: none;
+}
+
+.geToolbarContainer {
+  background: rgba(255, 255, 255, 1);
+  border-top: none !important;
+  border-color: rgba(82, 100, 154, 0.13) !important;
+}
+.geDiagramContainer {
+  background: rgba(255, 255, 255, 1);
+}
+
+`,
+                }
+              });
+            };
+            
+            const handleLoad = () => {
+              sendMessage2Parent({
+                event: 'drawio_loaded',
+                data: {
+                 iframeId,
+                }
+              });         
+            }
+
+            // 处理autosave事件
+            const handleAutosave = (data) => {
+              const targetCodeDiv = diagramDiv.querySelector(
+                `div[data-he-code][data-iframe-id="${iframeId}"]`
+              );
+              
+              
+              if (targetCodeDiv) {
+                const innerHTML = escape(data.xml);
+                
+                sendMessage2Parent({
+                  event: 'drawio_autosave',
+                  data: {
+                   iframeId,
+                   innerHTML,
+                  }
+                });
+                
+                sendMessage({
+                  action: 'status',
+                  message: 'Saved',
+                  modified: false,
+                });
+              }
+            };
+            
+            const handleExport = (data) => {
+              sendMessage2Parent({
+                event: 'drawio_export',
+                data: data
+              });
+            }
+
+            // 监听消息
+            window.addEventListener('message', (event) => {
+              if (event.source !== iframe.contentWindow) {
+                return;
+              }
+            
+              const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+              switch(data.event) {
+                case 'init':
+                  handleInit();
+                  break;
+                case 'load':
+                  handleLoad();
+                  break;
+                case 'configure':
+                  handleConfigure();
+                  break;
+                case 'autosave':
+                  handleAutosave(data);
+                  break;
+                case 'export':
+                  handleExport(data);
+                  break;
+              }
+            });
+          }
+        });
+      })
+  
+      
+      
+  window.addEventListener('message', (event) => {
+    if(typeof event.data ==='object' && event.data.iframeID) { 
+      const targetIframe = document.querySelector(`div[data-he-diagram] iframe[data-he-frame][data-iframe-id="${event.data.iframeID}"]`);
+      
+      if(!targetIframe) {
+        return;
+      }
+      
+      switch(event.data.event) {
+        case 'drawio_export':
+          targetIframe.contentWindow?.postMessage(
+            event.data.message,
+            cdn
+          )
+          break;
+          
+        default:
+          targetIframe.contentWindow?.postMessage(
+            event.data.message,
+            cdn
+          )
+          break;
+      }
+    }
+  })
+
+    </script>
+  
+      </head>
+    
+    <body style="margin: 0; padding: 0; width: 100%; height: 100%;">
+      <div data-he-diagram="true" style="width: 100%; height: 100%; overflow: hidden;" id="diagram-1">
+       <div data-he-code="true" style="display: none;" data-iframe-id="usw41gka7n">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;mxfile host="app.diagrams.net" version="24.0.0"&gt;
+  &lt;diagram id="star_rail_ui" name="星穹铁道剧情复现UI线框稿"&gt;
+    &lt;mxGraphModel dx="1554" dy="946" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1800" background="#ffffff" math="0" shadow="0"&gt;
+      &lt;root&gt;
+        &lt;mxCell id="0" /&gt;
+        &lt;mxCell id="1" parent="0" /&gt;
+        
+        
+        &lt;mxCell id="guide_center" value="" style="edgeStyle=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;dashed=1;endArrow=none;" parent="1" edge="1"&gt;
+          &lt;mxGeometry relative="1" as="geometry"&gt;
+            &lt;mxPoint x="800" y="40" as="sourcePoint" /&gt;
+            &lt;mxPoint x="800" y="1740" as="targetPoint" /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+        
+        
+        &lt;mxCell id="lbl_p01" value="P01 会话列表" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#333333;" parent="1" vertex="1"&gt;
+          &lt;mxGeometry x="40" y="90" width="100" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="lbl_p02" value="P02 新建会话" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#333333;" parent="1" vertex="1"&gt;
+          &lt;mxGeometry x="40" y="340" width="100" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="lbl_p03" value="P03 剧情推进" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#333333;" parent="1" vertex="1"&gt;
+          &lt;mxGeometry x="40" y="590" width="100" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="lbl_p04" value="P04 人物状态" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#333333;" parent="1" vertex="1"&gt;
+          &lt;mxGeometry x="40" y="840" width="100" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="lbl_p05" value="P05 快照列表" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#333333;" parent="1" vertex="1"&gt;
+          &lt;mxGeometry x="40" y="1090" width="100" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="lbl_p06" value="P06 对比报告" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#333333;" parent="1" vertex="1"&gt;
+          &lt;mxGeometry x="40" y="1340" width="100" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="lbl_p07" value="P07 导出/导入" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#333333;" parent="1" vertex="1"&gt;
+          &lt;mxGeometry x="40" y="1590" width="100" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+
+        
+        &lt;mxCell id="layer_p01" value="P01 会话列表" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;verticalAlign=top;align=center;spacingTop=10;fontSize=14;fontStyle=1;dashed=1;dashPattern=8 4;" parent="1" vertex="1"&gt;
+          &lt;mxGeometry x="240" y="50" width="1120" height="220" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p01_appbar" value="v-app-bar&amp;#10;星穹铁道剧情复现计划" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" parent="layer_p01" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="40" width="800" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p01_search" value="v-text-field&amp;#10;搜索会话" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" parent="layer_p01" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="90" width="400" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p01_filter" value="v-select&amp;#10;筛选: 全部/进行中/已完成" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" parent="layer_p01" vertex="1"&gt;
+          &lt;mxGeometry x="600" y="90" width="200" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p01_cards" value="v-card × N&amp;#10;会话卡片网格" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" parent="layer_p01" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="150" width="800" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+
+        
+        &lt;mxCell id="layer_p02" value="P02 新建会话" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;verticalAlign=top;align=center;spacingTop=10;fontSize=14;fontStyle=1;dashed=1;dashPattern=8 4;" parent="1" vertex="1"&gt;
+          &lt;mxGeometry x="240" y="300" width="1120" height="200" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p02_stepper" value="v-stepper&amp;#10;3步向导" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=12;" parent="layer_p02" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="40" width="800" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p02_step1" value="步骤1: 基本信息&amp;#10;v-text-field (会话名称)&amp;#10;v-textarea (会话描述)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=12;" parent="layer_p02" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="90" width="400" height="80" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p02_step2" value="步骤2: 配置加载&amp;#10;v-tabs (上传/选择已有)&amp;#10;v-file-input (上传配置包)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=12;" parent="layer_p02" vertex="1"&gt;
+          &lt;mxGeometry x="600" y="90" width="400" height="80" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+
+        
+        &lt;mxCell id="layer_p03" value="P03 剧情推进" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;verticalAlign=top;align=center;spacingTop=10;fontSize=14;fontStyle=1;dashed=1;dashPattern=8 4;" parent="1" vertex="1"&gt;
+          &lt;mxGeometry x="240" y="550" width="1120" height="220" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p03_appbar" value="v-app-bar&amp;#10;会话名称 + 工具栏" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=12;" parent="layer_p03" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="40" width="800" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p03_scene" value="v-card-title&amp;#10;场景描述" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=12;" parent="layer_p03" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="90" width="400" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p03_dialog" value="v-timeline&amp;#10;对话历史" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=12;" parent="layer_p03" vertex="1"&gt;
+          &lt;mxGeometry x="600" y="90" width="400" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p03_input" value="v-textarea&amp;#10;用户输入区" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=12;" parent="layer_p03" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="150" width="800" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+
+        
+        &lt;mxCell id="layer_p04" value="P04 人物状态面板" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;verticalAlign=top;align=center;spacingTop=10;fontSize=14;fontStyle=1;dashed=1;dashPattern=8 4;" parent="1" vertex="1"&gt;
+          &lt;mxGeometry x="240" y="800" width="1120" height="200" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p04_tabs" value="v-tabs&amp;#10;切换人物" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" parent="layer_p04" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="40" width="800" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p04_relations" value="v-expansion-panel&amp;#10;关系维度" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" parent="layer_p04" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="90" width="200" height="80" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p04_abilities" value="v-expansion-panel&amp;#10;能力维度" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" parent="layer_p04" vertex="1"&gt;
+          &lt;mxGeometry x="400" y="90" width="200" height="80" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p04_vision" value="v-expansion-panel&amp;#10;视野维度" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" parent="layer_p04" vertex="1"&gt;
+          &lt;mxGeometry x="640" y="90" width="200" height="80" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p04_personality" value="v-expansion-panel&amp;#10;性格维度" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" parent="layer_p04" vertex="1"&gt;
+          &lt;mxGeometry x="880" y="90" width="200" height="80" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+
+        
+        &lt;mxCell id="layer_p05" value="P05 快照列表" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;verticalAlign=top;align=center;spacingTop=10;fontSize=14;fontStyle=1;dashed=1;dashPattern=8 4;" parent="1" vertex="1"&gt;
+          &lt;mxGeometry x="240" y="1050" width="1120" height="200" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p05_dialog" value="v-dialog&amp;#10;快照管理对话框" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=12;" parent="layer_p05" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="40" width="800" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p05_timeline" value="v-timeline&amp;#10;快照时间线" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=12;" parent="layer_p05" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="90" width="800" height="80" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+
+        
+        &lt;mxCell id="layer_p06" value="P06 对比报告" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;verticalAlign=top;align=center;spacingTop=10;fontSize=14;fontStyle=1;dashed=1;dashPattern=8 4;" parent="1" vertex="1"&gt;
+          &lt;mxGeometry x="240" y="1300" width="1120" height="200" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p06_title" value="v-card-title&amp;#10;对比报告" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=12;" parent="layer_p06" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="40" width="800" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p06_tabs" value="v-tabs&amp;#10;对比维度" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=12;" parent="layer_p06" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="90" width="400" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p06_content" value="v-window&amp;#10;对比结果展示" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=12;" parent="layer_p06" vertex="1"&gt;
+          &lt;mxGeometry x="600" y="90" width="400" height="80" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+
+        
+        &lt;mxCell id="layer_p07" value="P07 导出/导入对话框" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;verticalAlign=top;align=center;spacingTop=10;fontSize=14;fontStyle=1;dashed=1;dashPattern=8 4;" parent="1" vertex="1"&gt;
+          &lt;mxGeometry x="240" y="1550" width="1120" height="200" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p07_dialog" value="v-dialog&amp;#10;导出/导入" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" parent="layer_p07" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="40" width="800" height="40" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p07_export" value="导出&amp;#10;v-select (导出类型)&amp;#10;v-checkbox-group (选择导出项)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" parent="layer_p07" vertex="1"&gt;
+          &lt;mxGeometry x="160" y="90" width="400" height="80" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="p07_import" value="导入&amp;#10;v-file-input (上传文件)&amp;#10;v-radio-group (冲突策略)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=12;" parent="layer_p07" vertex="1"&gt;
+          &lt;mxGeometry x="600" y="90" width="400" height="80" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+
+        
+        &lt;mxCell id="link_p01_p02" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#666666;entryX=0.5;entryY=0;exitX=0.5;exitY=1;" parent="1" source="layer_p01" target="layer_p02" edge="1"&gt;
+          &lt;mxGeometry relative="1" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="link_p02_p03" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#666666;entryX=0.5;entryY=0;exitX=0.5;exitY=1;" parent="1" source="layer_p02" target="layer_p03" edge="1"&gt;
+          &lt;mxGeometry relative="1" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="link_p03_p04" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#666666;entryX=0.5;entryY=0;exitX=0.5;exitY=1;" parent="1" source="layer_p03" target="layer_p04" edge="1"&gt;
+          &lt;mxGeometry relative="1" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="link_p03_p05" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#666666;entryX=0.5;entryY=0;exitX=0.5;exitY=1;" parent="1" source="layer_p03" target="layer_p05" edge="1"&gt;
+          &lt;mxGeometry relative="1" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="link_p03_p06" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#666666;entryX=0.5;entryY=0;exitX=0.5;exitY=1;" parent="1" source="layer_p03" target="layer_p06" edge="1"&gt;
+          &lt;mxGeometry relative="1" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+        &lt;mxCell id="link_p03_p07" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#666666;entryX=0.5;entryY=0;exitX=0.5;exitY=1;" parent="1" source="layer_p03" target="layer_p07" edge="1"&gt;
+          &lt;mxGeometry relative="1" as="geometry" /&gt;
+        &lt;/mxCell&gt;
+
+      &lt;/root&gt;
+    &lt;/mxGraphModel&gt;
+  &lt;/diagram&gt;
+&lt;/mxfile&gt;</div>
+      <iframe data-he-frame="true" src="https://lf-coze-web-cdn.coze.cn/obj/coze-web-cn/coze-drawio/index.26b84e9.html?embed=1&amp;noSplash=1&amp;spin=0&amp;noExitBtn=1&amp;noSaveBtn=1&amp;configure=1&amp;lang=zh&amp;saveAndExit=0&amp;mode=side&amp;readonly=0&amp;proto=json&amp;dev=1&amp;dark=0&amp;plugins=1&amp;p=toggle&amp;toggleLeft=0&amp;toggleRight=0" class="__helper-box" style="width: 100%; height: 100%; border: none;" data-iframe-id="usw41gka7n"></iframe></div>
+    
+    
+
+  </body></html>
