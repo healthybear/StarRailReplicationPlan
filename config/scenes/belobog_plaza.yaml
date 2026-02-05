@@ -1,0 +1,27 @@
+# 贝洛伯格广场 - 场景配置
+id: belobog_plaza
+name: 贝洛伯格中央广场
+description: |
+  贝洛伯格的中央广场，是城市的核心区域。
+  广场中央矗立着一座巨大的雕像，周围是繁忙的商业区和行政区。
+  尽管永冬笼罩着这座城市，广场上依然人来人往。
+
+defaultEnvironment:
+  weather: snowy
+  temperature: -15
+  lighting: dim
+  timeOfDay: afternoon
+  sceneCondition:
+    damaged: false
+    accessible: true
+    crowded: true
+
+connectedScenes:
+  - belobog_administrative_district
+  - belobog_commercial_district
+  - belobog_outer_city
+
+tags:
+  - 公共区域
+  - 贝洛伯格
+  - 主城区

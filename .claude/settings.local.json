@@ -1,10 +1,15 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(\"e:\\\\workspace\\\\StarRailReplicationPlan\\\\docs\\\\Phase1-开发落地方案.md\":*)",
+      "Bash(chmod:*)",
+      "Bash(pnpm install)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm build)",
+      "Bash(pnpm lint)"
+    ],
     "additionalDirectories": [
       "e:\\workspace\\StarRailReplicationPlan\\docs\\UI-UX"
-    ],
-    "allow": [
-      "Bash(\"e:\\\\workspace\\\\StarRailReplicationPlan\\\\docs\\\\Phase1-开发落地方案.md\":*)"
     ]
   }
 }

@@ -1,0 +1,56 @@
+# 星 - 人物配置
+id: stelle
+name: 星
+faction: 星穹列车
+description: |
+  开拓者，被星核选中的人。在雅利洛-VI被发现，随后加入星穹列车。
+  性格沉稳，话不多但行动力强，对自己的使命有着坚定的信念。
+
+personality:
+  traits:
+    openness: 0.65 # 中等偏高开放性 - 愿意接受新事物
+    conscientiousness: 0.7 # 较高尽责性 - 认真负责
+    extraversion: 0.4 # 较低外向性 - 内敛沉稳
+    agreeableness: 0.6 # 中等宜人性 - 友善但保持距离
+    neuroticism: 0.3 # 低神经质 - 情绪稳定
+
+  values:
+    selfDirection: 0.75 # 重视自主决定
+    benevolence: 0.65 # 关心他人但不过度
+    security: 0.6 # 重视安全
+
+initialAbilities:
+  combat: 75
+  social: 50
+  investigation: 70
+  survival: 80
+
+initialRelationships:
+  march7:
+    trust: 0.7
+    hostility: 0
+    intimacy: 0.6
+    respect: 0.65
+  danheng:
+    trust: 0.6
+    hostility: 0
+    intimacy: 0.35
+    respect: 0.7
+  welt:
+    trust: 0.55
+    hostility: 0
+    intimacy: 0.25
+    respect: 0.8
+  himeko:
+    trust: 0.6
+    hostility: 0
+    intimacy: 0.3
+    respect: 0.75
+
+behaviorConfig:
+  speakingStyle: 简洁直接，话不多但每句话都有分量，偶尔会有些冷幽默
+  catchphrases:
+    - '......'
+    - '明白了。'
+    - '交给我。'
+    - '走吧。'

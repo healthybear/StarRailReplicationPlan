@@ -1,0 +1,100 @@
+# 关系触发表配置
+version: '0.1.0'
+
+rules:
+  # 帮助行为增加信任
+  - id: help_increases_trust
+    name: 帮助行为增加信任
+    eventType: help
+    effects:
+      - target: relationship.trust
+        changeType: delta
+        value: 0.05
+        min: 0
+        max: 1
+    priority: 10
+
+  # 对话增加亲密度
+  - id: dialogue_increases_intimacy
+    name: 对话增加亲密度
+    eventType: dialogue
+    effects:
+      - target: relationship.intimacy
+        changeType: delta
+        value: 0.02
+        min: 0
+        max: 1
+    priority: 5
+
+  # 冲突降低信任
+  - id: conflict_decreases_trust
+    name: 冲突降低信任
+    eventType: conflict
+    effects:
+      - target: relationship.trust
+        changeType: delta
+        value: -0.1
+        min: 0
+        max: 1
+      - target: relationship.hostility
+        changeType: delta
+        value: 0.15
+        min: 0
+        max: 1
+    priority: 10
+
+  # 共同战斗增加尊重
+  - id: combat_together_increases_respect
+    name: 共同战斗增加尊重
+    eventType: combat_together
+    effects:
+      - target: relationship.respect
+        changeType: delta
+        value: 0.08
+        min: 0
+        max: 1
+      - target: relationship.trust
+        changeType: delta
+        value: 0.03
+        min: 0
+        max: 1
+    priority: 8
+
+  # 背叛大幅降低关系
+  - id: betrayal_destroys_relationship
+    name: 背叛破坏关系
+    eventType: betrayal
+    effects:
+      - target: relationship.trust
+        changeType: set
+        value: 0.1
+        min: 0
+        max: 1
+      - target: relationship.hostility
+        changeType: set
+        value: 0.8
+        min: 0
+        max: 1
+      - target: relationship.intimacy
+        changeType: multiply
+        value: 0.2
+        min: 0
+        max: 1
+    priority: 100
+
+  # 救命之恩大幅增加信任
+  - id: save_life_increases_trust
+    name: 救命之恩增加信任
+    eventType: save_life
+    effects:
+      - target: relationship.trust
+        changeType: delta
+        value: 0.3
+        min: 0
+        max: 1
+      - target: relationship.respect
+        changeType: delta
+        value: 0.2
+        min: 0
+        max: 1
+    priority: 50

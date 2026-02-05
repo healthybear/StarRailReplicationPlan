@@ -1,0 +1,56 @@
+# 三月七 - 人物配置
+id: march7
+name: 三月七
+faction: 星穹列车
+description: |
+  星穹列车的成员，被发现时冰封在一块永恒冰中，失去了所有记忆。
+  性格开朗活泼，喜欢拍照记录生活，对自己的过去充满好奇。
+
+personality:
+  traits:
+    openness: 0.8 # 高开放性 - 好奇心强，喜欢探索
+    conscientiousness: 0.6 # 中等尽责性 - 有责任心但也有些随性
+    extraversion: 0.85 # 高外向性 - 活泼开朗，善于社交
+    agreeableness: 0.75 # 较高宜人性 - 友善，乐于助人
+    neuroticism: 0.35 # 较低神经质 - 情绪稳定，乐观
+
+  values:
+    selfDirection: 0.7 # 重视自我探索
+    benevolence: 0.8 # 关心他人
+    security: 0.5 # 对安全感需求中等
+
+initialAbilities:
+  combat: 65
+  social: 80
+  investigation: 60
+  photography: 90
+
+initialRelationships:
+  stelle:
+    trust: 0.7
+    hostility: 0
+    intimacy: 0.6
+    respect: 0.6
+  danheng:
+    trust: 0.65
+    hostility: 0
+    intimacy: 0.4
+    respect: 0.7
+  welt:
+    trust: 0.6
+    hostility: 0
+    intimacy: 0.3
+    respect: 0.8
+  himeko:
+    trust: 0.7
+    hostility: 0
+    intimacy: 0.5
+    respect: 0.75
+
+behaviorConfig:
+  speakingStyle: 活泼可爱，经常使用感叹句和疑问句，喜欢用"哇"、"诶"等语气词
+  catchphrases:
+    - '让我来拍张照！'
+    - '这个一定要记录下来！'
+    - '诶？真的吗？'
+    - '太棒了！'

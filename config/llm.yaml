@@ -1,0 +1,33 @@
+# LLM 配置
+defaultProvider: deepseek
+
+providers:
+  deepseek:
+    enabled: true
+    model: deepseek-chat
+    baseUrl: https://api.deepseek.com/v1
+    defaultParams:
+      temperature: 0.7
+      maxTokens: 2000
+      topP: 0.95
+
+  claude:
+    enabled: true
+    model: claude-sonnet-4-5-20250929
+    defaultParams:
+      temperature: 0.7
+      maxTokens: 2000
+
+  doubao:
+    enabled: false
+    model: doubao-pro-32k
+    baseUrl: https://ark.cn-beijing.volces.com/api/v3
+    defaultParams:
+      temperature: 0.7
+      maxTokens: 2000
+
+# 角色专用 Provider（可选）
+# 可以为特定角色指定使用的 LLM
+characterProviders:
+  # march7: deepseek
+  # stelle: claude
