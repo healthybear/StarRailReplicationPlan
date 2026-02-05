@@ -155,3 +155,49 @@ export const CharacterConfigSchema = z.object({
 });
 
 export type CharacterConfig = z.infer<typeof CharacterConfigSchema>;
+
+/**
+ * 信息归属规则 Schema
+ * 定义事件如何触发信息归属给人物
+ */
+export const InformationAttributionRuleSchema = z.object({
+  /** 规则 ID */
+  id: z.string(),
+  /** 规则名称 */
+  name: z.string(),
+  /** 事件类型 */
+  eventType: z.string(),
+  /** 信息来源类型 */
+  sourceType: z.enum(['witnessed', 'heard', 'told', 'inferred']),
+  /** 归属目标 */
+  attributionTarget: z.enum([
+    'participants', // 所有参与者
+    'witnesses', // 目击者（在场但非参与者）
+    'specific', // 特定人物（需要在条件中指定）
+    'all_present', // 所有在场人物
+  ]),
+  /** 触发条件（可选） */
+  conditions: z.array(TriggerConditionSchema).optional(),
+  /** 信息置信度（可选，默认 1.0） */
+  confidence: z.number().min(0).max(1).optional(),
+  /** 优先级 */
+  priority: z.number().optional(),
+});
+
+export type InformationAttributionRule = z.infer<
+  typeof InformationAttributionRuleSchema
+>;
+
+/**
+ * 信息归属配置 Schema
+ */
+export const InformationAttributionConfigSchema = z.object({
+  /** 配置版本 */
+  version: z.string(),
+  /** 规则列表 */
+  rules: z.array(InformationAttributionRuleSchema),
+});
+
+export type InformationAttributionConfig = z.infer<
+  typeof InformationAttributionConfigSchema
+>;

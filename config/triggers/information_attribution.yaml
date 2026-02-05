@@ -1,0 +1,75 @@
+# 信息归属规则配置
+version: '0.1.0'
+
+rules:
+  # 对话事件 - 参与者获得信息（被告知）
+  - id: dialogue_told
+    name: 对话信息归属
+    eventType: dialogue
+    sourceType: told
+    attributionTarget: participants
+    confidence: 0.95
+    priority: 10
+
+  # 公开行动 - 所有在场人物目睹
+  - id: public_action_witnessed
+    name: 公开行动目睹
+    eventType: action
+    sourceType: witnessed
+    attributionTarget: all_present
+    confidence: 1.0
+    priority: 10
+
+  # 战斗事件 - 所有在场人物目睹
+  - id: combat_witnessed
+    name: 战斗目睹
+    eventType: combat
+    sourceType: witnessed
+    attributionTarget: all_present
+    confidence: 1.0
+    priority: 15
+
+  # 秘密对话 - 仅参与者知道
+  - id: secret_dialogue
+    name: 秘密对话
+    eventType: secret_dialogue
+    sourceType: told
+    attributionTarget: participants
+    confidence: 1.0
+    priority: 20
+
+  # 窃听 - 旁观者听闻
+  - id: overheard
+    name: 窃听
+    eventType: overheard
+    sourceType: heard
+    attributionTarget: witnesses
+    confidence: 0.7
+    priority: 5
+
+  # 公告/广播 - 所有在场人物听闻
+  - id: announcement_heard
+    name: 公告听闻
+    eventType: announcement
+    sourceType: heard
+    attributionTarget: all_present
+    confidence: 0.9
+    priority: 10
+
+  # 发现事件 - 发现者目睹
+  - id: discovery_witnessed
+    name: 发现目睹
+    eventType: discovery
+    sourceType: witnessed
+    attributionTarget: participants
+    confidence: 1.0
+    priority: 10
+
+  # 传闻 - 听闻者获得信息（置信度较低）
+  - id: rumor_heard
+    name: 传闻听闻
+    eventType: rumor
+    sourceType: heard
+    attributionTarget: participants
+    confidence: 0.5
+    priority: 5

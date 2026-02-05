@@ -96,6 +96,8 @@ export {
   TriggerRuleSchema,
   TriggerTableConfigSchema,
   CharacterConfigSchema,
+  InformationAttributionRuleSchema,
+  InformationAttributionConfigSchema,
 } from './config.js';
 export type {
   LLMProviderConfig,
@@ -105,4 +107,6 @@ export type {
   TriggerRule,
   TriggerTableConfig,
   CharacterConfig,
+  InformationAttributionRule,
+  InformationAttributionConfig,
 } from './config.js';

@@ -5,6 +5,10 @@ export { initializeContainer, getContainer, resolve } from './container.js';
 
 // Vision Manager
 export { VisionManager } from './vision-manager/index.js';
+export type {
+  EventContext,
+  AttributionResult,
+} from './vision-manager/index.js';
 
 // Character State
 export {
@@ -12,28 +16,65 @@ export {
   TriggerEngine,
   CharacterStateService,
 } from './character-state/index.js';
+export type {
+  StateChangeRecord,
+  StateChangeListener,
+} from './character-state/index.js';
 
 // World Engine
 export { WorldEngine } from './world-engine/index.js';
 
 // Input Parser
-export { InputParser, InputType } from './input-parser/index.js';
+export {
+  InputParser,
+  InputType,
+  DEFAULT_PERMISSION_CONFIG,
+} from './input-parser/index.js';
+export type {
+  ParsedInput,
+  ParsedCommand,
+  ParsedDialogue,
+  ParsedInvalid,
+  ParsedUnauthorized,
+  PermissionConfig,
+} from './input-parser/index.js';
 
 // Character Agent
-export { CharacterAgent, PromptBuilder } from './character-agent/index.js';
-export type { AgentResponse } from './character-agent/character-agent.js';
-export type { PromptContext } from './character-agent/prompt-builder.js';
+export {
+  CharacterAgent,
+  PromptBuilder,
+  ResponseType,
+} from './character-agent/index.js';
+export type {
+  AgentResponse,
+  ParsedResponseContent,
+  DualCharacterResponse,
+  PromptContext,
+} from './character-agent/index.js';
 
 // Story Orchestrator
 export { StoryOrchestrator } from './story-orchestrator/index.js';
+export type {
+  AdvanceResult,
+  StateSnapshot,
+  MultiCharacterAdvanceOptions,
+} from './story-orchestrator/index.js';
 
 // Anchor Evaluation
 export { AnchorEvaluator } from './anchor-evaluation/index.js';
+export type {
+  CreateAnchorOptions,
+  CompareOptions,
+} from './anchor-evaluation/index.js';
 
 // Export Import
 export { ExportImportService } from './export-import/index.js';
 export type {
+  ExportType,
+  ConflictStrategy,
   ExportMetadata,
   ExportPackage,
+  ConflictInfo,
+  ImportOptions,
   ImportResult,
 } from './export-import/index.js';
