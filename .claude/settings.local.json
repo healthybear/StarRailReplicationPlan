@@ -22,7 +22,8 @@
       "Bash(packages/core/src/container.ts:*)",
       "Bash(test-session-load.sh:*)",
       "Bash(packages/cli/test-session-load.js:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(test-full-flow.js:*)"
     ],
     "additionalDirectories": [
       "e:\\workspace\\StarRailReplicationPlan\\docs\\UI-UX"

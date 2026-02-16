@@ -7,6 +7,7 @@ import type {
   SceneConfig,
   ComparisonResult,
 } from '@star-rail/types';
+import { EnvLoader } from '@star-rail/infrastructure';
 import { getSessionManager } from '../services/session-manager.js';
 import { getStoryService } from '../services/story-service.js';
 
@@ -23,7 +24,6 @@ export async function showSessionWorkspace(
   // 初始化剧情服务（如果尚未初始化）
   if (!storyService.isInitialized()) {
     // 使用 DeepSeek 配置
-    const { EnvLoader } = await import('@star-rail/infrastructure');
     const apiKey = EnvLoader.getOptional('DEEPSEEK_API_KEY');
 
     if (!apiKey) {
