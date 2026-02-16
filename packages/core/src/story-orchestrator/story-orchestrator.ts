@@ -89,7 +89,20 @@ export class StoryOrchestrator {
     private worldEngine: WorldEngine,
     private inputParser: InputParser,
     private characterAgent: CharacterAgent
-  ) {}
+  ) {
+    // 调试：检查所有依赖是否正确注入
+    if (!storage) console.error('[StoryOrchestrator] storage is undefined');
+    if (!visionManager)
+      console.error('[StoryOrchestrator] visionManager is undefined');
+    if (!characterStateService)
+      console.error('[StoryOrchestrator] characterStateService is undefined');
+    if (!worldEngine)
+      console.error('[StoryOrchestrator] worldEngine is undefined');
+    if (!inputParser)
+      console.error('[StoryOrchestrator] inputParser is undefined');
+    if (!characterAgent)
+      console.error('[StoryOrchestrator] characterAgent is undefined');
+  }
 
   /**
    * 初始化会话

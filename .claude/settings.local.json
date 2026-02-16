@@ -10,7 +10,19 @@
       "Bash(pnpm test)",
       "Bash(pnpm test:*)",
       "Bash(pnpm run build:*)",
-      "Bash(pnpm run test:*)"
+      "Bash(pnpm run test:*)",
+      "Bash(node:*)",
+      "Bash(./start-cli.sh:*)",
+      "Bash(测试会话03)",
+      "Bash(EOF)",
+      "Bash(测试会话04)",
+      "Bash(find:*)",
+      "Bash(测试会话05)",
+      "Bash(packages/core/tsconfig.json:*)",
+      "Bash(packages/core/src/container.ts:*)",
+      "Bash(test-session-load.sh:*)",
+      "Bash(packages/cli/test-session-load.js:*)",
+      "Bash(ls:*)"
     ],
     "additionalDirectories": [
       "e:\\workspace\\StarRailReplicationPlan\\docs\\UI-UX"

@@ -22,10 +22,20 @@ export async function showSessionWorkspace(
 
   // 初始化剧情服务（如果尚未初始化）
   if (!storyService.isInitialized()) {
-    // 使用默认 LLM 配置（mock 模式）
+    // 使用 DeepSeek 配置
+    const { EnvLoader } = await import('@star-rail/infrastructure');
+    const apiKey = EnvLoader.getOptional('DEEPSEEK_API_KEY');
+
+    if (!apiKey) {
+      console.log(chalk.red('\n错误: 未设置 DEEPSEEK_API_KEY'));
+      console.log(chalk.gray('请在 .env 文件中设置 DEEPSEEK_API_KEY\n'));
+      return;
+    }
+
     storyService.initialize({
-      provider: 'mock',
-      model: 'mock-model',
+      provider: 'deepseek',
+      model: 'deepseek-chat',
+      baseURL: 'https://api.deepseek.com',
     });
   }
 

@@ -2,6 +2,7 @@ import 'reflect-metadata';
 
 // Container
 export { initializeContainer, getContainer, resolve } from './container.js';
+export type { SimpleLLMConfig } from './container.js';
 
 // Vision Manager
 export { VisionManager } from './vision-manager/index.js';

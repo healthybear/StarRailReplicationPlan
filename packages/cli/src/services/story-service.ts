@@ -4,6 +4,7 @@ import {
   AnchorEvaluator,
   initializeContainer,
   getContainer,
+  type SimpleLLMConfig,
 } from '@star-rail/core';
 import type {
   StateSnapshot,
@@ -37,7 +38,10 @@ export class StoryService {
    * @param llmConfig LLM 配置
    * @param dataDir 数据目录
    */
-  initialize(llmConfig: LLMConfig, dataDir: string = './data'): void {
+  initialize(
+    llmConfig: LLMConfig | SimpleLLMConfig,
+    dataDir: string = './data'
+  ): void {
     if (this.initialized) {
       return;
     }

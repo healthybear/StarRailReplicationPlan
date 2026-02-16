@@ -397,15 +397,28 @@ cp .env.example .env
 
 ### 运行
 
-```bash
-# 启动 CLI 交互式菜单
-pnpm --filter @star-rail/cli start
+**重要：CLI 必须从项目根目录运行，以确保正确访问配置文件和数据目录。**
 
-# 或直接使用命令
-pnpm --filter @star-rail/cli start -- start      # 启动会话
-pnpm --filter @star-rail/cli start -- session ls # 列出会话
-pnpm --filter @star-rail/cli start -- config check # 检查配置
+```bash
+# 方式1：使用启动脚本（推荐）
+./start-cli.sh                    # 启动交互式菜单
+./start-cli.sh session list       # 列出所有会话
+./start-cli.sh config check       # 检查配置
+
+# 方式2：直接运行（从项目根目录）
+node packages/cli/dist/index.js              # 启动交互式菜单
+node packages/cli/dist/index.js start --new  # 创建新会话
+node packages/cli/dist/index.js session list # 列出会话
+
+# 方式3：使用 pnpm（从项目根目录）
+pnpm --filter @star-rail/cli start
 ```
+
+**注意事项：**
+
+- 确保已经运行 `pnpm build` 构建所有包
+- 确保 `.env` 文件已配置（从 `.env.example` 复制并填写 API Key）
+- 所有数据文件（会话、锚点）都存储在项目根目录的 `data/` 目录下
 
 ---
 
