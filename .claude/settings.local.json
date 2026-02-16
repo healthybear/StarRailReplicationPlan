@@ -23,7 +23,16 @@
       "Bash(test-session-load.sh:*)",
       "Bash(packages/cli/test-session-load.js:*)",
       "Bash(ls:*)",
-      "Bash(test-full-flow.js:*)"
+      "Bash(test-full-flow.js:*)",
+      "Bash(tsx:*)",
+      "Bash(pnpm tsx:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm demo:*)",
+      "Bash(pnpm cli start:*)",
+      "Bash(timeout 5 bash -c 'echo \"\"/quit\"\" | pnpm cli start -c session_1771222579184_hd9h73v')",
+      "Bash(pnpm tsc:*)",
+      "Bash(timeout 5 bash -c 'echo \"\"/status\"\" | pnpm cli start -c session_1771223267164_3r4l7lq')",
+      "Bash(pnpm eslint:*)"
     ],
     "additionalDirectories": [
       "e:\\workspace\\StarRailReplicationPlan\\docs\\UI-UX"

@@ -98,3 +98,107 @@ rules:
         min: 0
         max: 1
     priority: 50
+
+  # 分享秘密增加亲密度和信任
+  - id: share_secret_increases_intimacy
+    name: 分享秘密增加亲密度
+    eventType: share_secret
+    effects:
+      - target: relationship.intimacy
+        changeType: delta
+        value: 0.15
+        min: 0
+        max: 1
+      - target: relationship.trust
+        changeType: delta
+        value: 0.1
+        min: 0
+        max: 1
+    priority: 20
+
+  # 赞美增加好感
+  - id: praise_increases_relationship
+    name: 赞美增加好感
+    eventType: praise
+    effects:
+      - target: relationship.intimacy
+        changeType: delta
+        value: 0.03
+        min: 0
+        max: 1
+    priority: 3
+
+  # 批评降低亲密度
+  - id: criticism_decreases_intimacy
+    name: 批评降低亲密度
+    eventType: criticism
+    effects:
+      - target: relationship.intimacy
+        changeType: delta
+        value: -0.05
+        min: 0
+        max: 1
+    priority: 5
+
+  # 一起探索增加关系
+  - id: explore_together_increases_bond
+    name: 一起探索增加关系
+    eventType: explore_together
+    effects:
+      - target: relationship.intimacy
+        changeType: delta
+        value: 0.04
+        min: 0
+        max: 1
+      - target: relationship.trust
+        changeType: delta
+        value: 0.02
+        min: 0
+        max: 1
+    priority: 6
+
+  # 分享食物增加亲密度
+  - id: share_food_increases_intimacy
+    name: 分享食物增加亲密度
+    eventType: share_food
+    effects:
+      - target: relationship.intimacy
+        changeType: delta
+        value: 0.03
+        min: 0
+        max: 1
+    priority: 4
+
+  # 保护行为增加信任和尊重
+  - id: protect_increases_trust_respect
+    name: 保护行为增加信任和尊重
+    eventType: protect
+    effects:
+      - target: relationship.trust
+        changeType: delta
+        value: 0.08
+        min: 0
+        max: 1
+      - target: relationship.respect
+        changeType: delta
+        value: 0.06
+        min: 0
+        max: 1
+    priority: 12
+
+  # 欺骗降低信任
+  - id: lie_decreases_trust
+    name: 欺骗降低信任
+    eventType: lie
+    effects:
+      - target: relationship.trust
+        changeType: delta
+        value: -0.15
+        min: 0
+        max: 1
+      - target: relationship.hostility
+        changeType: delta
+        value: 0.05
+        min: 0
+        max: 1
+    priority: 15

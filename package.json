@@ -16,7 +16,10 @@
     "format:check": "prettier --check \"packages/*/src/**/*.ts\"",
     "test": "pnpm -r test",
     "clean": "pnpm -r clean && rm -rf node_modules",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "cli": "node --no-deprecation packages/cli/dist/index.js",
+    "demo": "tsx --no-deprecation scripts/create-demo-session.ts",
+    "start": "pnpm cli start"
   },
   "devDependencies": {
     "@commitlint/cli": "^18.4.4",
@@ -30,6 +33,7 @@
     "lint-staged": "^15.2.0",
     "prettier": "^3.1.1",
     "tsup": "^8.0.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.3.3"
   },
   "lint-staged": {
