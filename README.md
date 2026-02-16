@@ -397,7 +397,7 @@ cp .env.example .env
 
 ### 运行
 
-**重要：CLI 必须从项目根目录运行，以确保正确访问配置文件和数据目录。**
+**CLI 会自动检测并切换到项目根目录，无论从哪里运行都能正确访问配置和数据。**
 
 ```bash
 # 方式1：使用启动脚本（推荐）
@@ -405,20 +405,27 @@ cp .env.example .env
 ./start-cli.sh session list       # 列出所有会话
 ./start-cli.sh config check       # 检查配置
 
-# 方式2：直接运行（从项目根目录）
+# 方式2：直接运行（可以从任何目录）
 node packages/cli/dist/index.js              # 启动交互式菜单
 node packages/cli/dist/index.js start --new  # 创建新会话
 node packages/cli/dist/index.js session list # 列出会话
 
-# 方式3：使用 pnpm（从项目根目录）
+# 方式3：使用 pnpm
 pnpm --filter @star-rail/cli start
 ```
+
+**路径处理机制：**
+
+- CLI 启动时会自动查找项目根目录（包含 `workspaces` 字段的 package.json）
+- 自动切换工作目录到项目根目录，确保相对路径正确
+- 所有数据文件（会话、锚点）都存储在项目根目录的 `data/` 目录下
+- 配置文件从项目根目录的 `config/` 目录加载
+- `.env` 文件从项目根目录加载
 
 **注意事项：**
 
 - 确保已经运行 `pnpm build` 构建所有包
 - 确保 `.env` 文件已配置（从 `.env.example` 复制并填写 API Key）
-- 所有数据文件（会话、锚点）都存储在项目根目录的 `data/` 目录下
 
 ---
 
