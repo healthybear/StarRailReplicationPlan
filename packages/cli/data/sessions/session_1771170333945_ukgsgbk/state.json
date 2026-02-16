@@ -1,0 +1,35 @@
+{
+  "worldState": {
+    "currentSceneId": "default",
+    "timeline": {
+      "currentTurn": 0,
+      "timestamp": 1771170333945
+    },
+    "environment": {
+      "physical": {
+        "weather": "sunny",
+        "lighting": "bright",
+        "timeOfDay": "morning"
+      },
+      "social": {
+        "factions": {}
+      },
+      "atmosphere": {
+        "tension": 0
+      }
+    },
+    "eventChain": []
+  },
+  "characters": {},
+  "information": {
+    "global": [],
+    "byCharacter": {}
+  },
+  "metadata": {
+    "sessionId": "session_1771170333945_ukgsgbk",
+    "sessionName": "测试01",
+    "createdAt": 1771170333945,
+    "lastSaved": 1771170333945,
+    "version": "0.1.0"
+  }
+}

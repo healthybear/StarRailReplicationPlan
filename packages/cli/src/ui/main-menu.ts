@@ -4,6 +4,10 @@ import boxen from 'boxen';
 
 /**
  * 显示主菜单
+ *
+ * 注意：本文件中的命令调用已优化，避免 Commander.js 的 parseAsync 重复调用问题。
+ * 对于 export、import、config 等命令，直接调用导出的函数而非通过 parseAsync。
+ * 详见各命令文件中的注释说明。
  */
 export async function showMainMenu(): Promise<void> {
   // 显示欢迎信息
@@ -53,23 +57,21 @@ export async function showMainMenu(): Promise<void> {
         break;
       }
       case 'export': {
-        const { exportCommand } = await import('../commands/export.js');
-        await exportCommand.parseAsync(['node', 'star-rail', 'export']);
+        // 直接调用导出函数，避免 Commander parseAsync 重复调用问题
+        const { handleExport } = await import('../commands/export.js');
+        await handleExport();
         break;
       }
       case 'import': {
-        const { importCommand } = await import('../commands/import.js');
-        await importCommand.parseAsync(['node', 'star-rail', 'import']);
+        // 直接调用导入函数，避免 Commander parseAsync 重复调用问题
+        const { handleImport } = await import('../commands/import.js');
+        await handleImport();
         break;
       }
       case 'config': {
-        const { configCommand } = await import('../commands/config.js');
-        await configCommand.parseAsync([
-          'node',
-          'star-rail',
-          'config',
-          'check',
-        ]);
+        // 直接调用配置检查函数，避免 Commander parseAsync 重复调用问题
+        const { checkConfig } = await import('../commands/config.js');
+        await checkConfig();
         break;
       }
       case 'exit':
@@ -103,11 +105,12 @@ async function showSessionMenu(): Promise<void> {
     return;
   }
 
-  const { sessionCommand } = await import('../commands/session.js');
+  const { listSessions, showSessionInfo, deleteSession, createSnapshot } =
+    await import('../commands/session.js');
 
   switch (action) {
     case 'list':
-      await sessionCommand.parseAsync(['node', 'star-rail', 'session', 'list']);
+      await listSessions();
       break;
     case 'info': {
       const { sessionId } = await inquirer.prompt([
@@ -118,13 +121,7 @@ async function showSessionMenu(): Promise<void> {
         },
       ]);
       if (sessionId) {
-        await sessionCommand.parseAsync([
-          'node',
-          'star-rail',
-          'session',
-          'info',
-          sessionId,
-        ]);
+        await showSessionInfo(sessionId);
       }
       break;
     }
@@ -137,13 +134,7 @@ async function showSessionMenu(): Promise<void> {
         },
       ]);
       if (sessionId) {
-        await sessionCommand.parseAsync([
-          'node',
-          'star-rail',
-          'session',
-          'delete',
-          sessionId,
-        ]);
+        await deleteSession(sessionId);
       }
       break;
     }
@@ -156,13 +147,7 @@ async function showSessionMenu(): Promise<void> {
         },
       ]);
       if (sessionId) {
-        await sessionCommand.parseAsync([
-          'node',
-          'star-rail',
-          'session',
-          'snapshot',
-          sessionId,
-        ]);
+        await createSnapshot(sessionId);
       }
       break;
     }
