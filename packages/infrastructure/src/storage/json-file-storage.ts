@@ -40,7 +40,17 @@ export class JsonFileStorage implements StorageAdapter {
   async saveSession(sessionId: string, state: SessionState): Promise<void> {
     const filePath = this.getSessionFilePath(sessionId);
     await fs.ensureDir(path.dirname(filePath));
-    await fs.writeJson(filePath, state, { spaces: 2 });
+
+    // 更新 lastSaved 时间戳
+    const stateToSave = {
+      ...state,
+      metadata: {
+        ...state.metadata,
+        lastSaved: Date.now(),
+      },
+    };
+
+    await fs.writeJson(filePath, stateToSave, { spaces: 2 });
   }
 
   async loadSession(sessionId: string): Promise<SessionState | null> {
