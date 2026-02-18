@@ -37,3 +37,9 @@ coverage/
 # Temporary files
 *.tmp
 *.temp
+
+# Claude Code - Keep skills but ignore session data
+.claude/sessions/
+.claude/cache/
+.claude/*.jsonl
+.claude/*.log
