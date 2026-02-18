@@ -32,7 +32,9 @@
       "Bash(timeout 5 bash -c 'echo \"\"/quit\"\" | pnpm cli start -c session_1771222579184_hd9h73v')",
       "Bash(pnpm tsc:*)",
       "Bash(timeout 5 bash -c 'echo \"\"/status\"\" | pnpm cli start -c session_1771223267164_3r4l7lq')",
-      "Bash(pnpm eslint:*)"
+      "Bash(pnpm eslint:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "additionalDirectories": [
       "e:\\workspace\\StarRailReplicationPlan\\docs\\UI-UX"
