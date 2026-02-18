@@ -1,5 +1,14 @@
 import { createApp } from 'vue';
-import './style.css';
+import { createPinia } from 'pinia';
+import vuetify from './plugins/vuetify';
+import 'virtual:uno.css';
+import '@unocss/reset/tailwind.css';
+import './assets/styles/main.scss';
 import App from './App.vue';
 
-createApp(App).mount('#app');
+const app = createApp(App);
+const pinia = createPinia();
+
+app.use(pinia);
+app.use(vuetify);
+app.mount('#app');

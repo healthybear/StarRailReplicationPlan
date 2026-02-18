@@ -34,7 +34,13 @@
       "Bash(timeout 5 bash -c 'echo \"\"/status\"\" | pnpm cli start -c session_1771223267164_3r4l7lq')",
       "Bash(pnpm eslint:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npx @nestjs/cli generate:*)",
+      "Bash(pnpm run start:dev)",
+      "Bash(pnpm rebuild:*)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(curl:*)"
     ],
     "additionalDirectories": [
       "e:\\workspace\\StarRailReplicationPlan\\docs\\UI-UX"

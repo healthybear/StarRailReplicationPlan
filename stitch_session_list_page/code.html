@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Session List Page</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#197fe6",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111921",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-nav {
+            background-color: #197fe61a;
+            color: #197fe6;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark flex flex-col">
+<div class="p-6 flex items-center gap-3">
+<div class="size-9 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-2xl">bolt</span>
+</div>
+<div>
+<h1 class="font-bold text-lg leading-none">AI Manager</h1>
+<p class="text-xs text-slate-500 mt-1 uppercase tracking-wider font-semibold">Enterprise</p>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-1 mt-4">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg active-nav font-medium transition-colors" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span>Sessions</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium transition-colors" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span>Workflows</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium transition-colors" href="#">
+<span class="material-symbols-outlined">auto_awesome_motion</span>
+<span>Templates</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium transition-colors" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+<span>Analytics</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-200 dark:border-slate-800">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+<div class="mt-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden shrink-0">
+<img alt="User Profile" data-alt="Portrait of a male professional user" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEuSvfU8fwgR4jDKAcuSE6CQJAU5zSO2O7fIa83NScopgMFiwsuLzUKYTwghRjTLMPx06xjjw6UJ_xlgzWuuse0I364SXMwu81WL5uA61A68KaLctpK4L8_6p5hcAMfRQUxjZImR5TZu-O-B0jq40RxpSdtHajjU1lAX1dYCmGO_dDKpfWENZegZVqXeoUOW15bEst0MTBebWyfTmTs4K7_-QbRMS5F9kIXJmI4CqMVTkLy91Y6VXfN7jXd5_E7-ER1IktE4QC-Ffp"/>
+</div>
+<div class="overflow-hidden">
+<p class="text-sm font-semibold truncate">Alex Rivera</p>
+<p class="text-xs text-slate-500 truncate">Pro Account</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col overflow-hidden">
+<!-- Header -->
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark px-8 flex items-center justify-between shrink-0">
+<div class="flex items-center gap-4 flex-1">
+<h2 class="text-xl font-bold">Session List</h2>
+<div class="h-6 w-px bg-slate-200 dark:bg-slate-800"></div>
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+<input class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 placeholder:text-slate-400 transition-all" placeholder="Search sessions..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-background-dark"></span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<button class="ml-2 flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all shadow-sm">
+<span class="material-symbols-outlined text-lg">add</span>
+<span>新建会话</span>
+</button>
+</div>
+</header>
+<!-- Content Area -->
+<div class="flex-1 overflow-y-auto p-8 bg-background-light dark:bg-background-dark">
+<!-- Breadcrumbs -->
+<nav class="flex items-center gap-2 text-sm text-slate-500 mb-6">
+<a class="hover:text-primary transition-colors" href="#">Home</a>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="text-slate-900 dark:text-slate-100 font-medium">Session List</span>
+</nav>
+<!-- Stats Overview -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+<div class="bg-white dark:bg-background-dark p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Sessions</p>
+<p class="text-2xl font-bold mt-1">1,284</p>
+</div>
+<div class="bg-white dark:bg-background-dark p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active Now</p>
+<p class="text-2xl font-bold mt-1 text-primary">12</p>
+</div>
+<div class="bg-white dark:bg-background-dark p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Storage Used</p>
+<p class="text-2xl font-bold mt-1">4.2 GB</p>
+</div>
+<div class="bg-white dark:bg-background-dark p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Credits Remaining</p>
+<p class="text-2xl font-bold mt-1 text-emerald-500">84%</p>
+</div>
+</div>
+<!-- Table Container -->
+<div class="bg-white dark:bg-background-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Session Name</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Last Updated</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<!-- Row 1 -->
+<tr class="group hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-lg">support_agent</span>
+</div>
+<span class="font-medium">Customer Support Bot</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+<span class="size-1.5 rounded-full bg-primary"></span>
+                                        Active
+                                    </span>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">2 hours ago</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all" title="Edit">
+<span class="material-symbols-outlined text-lg">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all" title="Delete">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="group hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">description</span>
+</div>
+<span class="font-medium">Daily Report Automation</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+<span class="size-1.5 rounded-full bg-slate-400"></span>
+                                        Idle
+                                    </span>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">5 hours ago</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all">
+<span class="material-symbols-outlined text-lg">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="group hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">hub</span>
+</div>
+<span class="font-medium">Lead Generation Workflow</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
+<span class="size-1.5 rounded-full bg-emerald-500"></span>
+                                        Running
+                                    </span>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">Yesterday</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all">
+<span class="material-symbols-outlined text-lg">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="group hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">analytics</span>
+</div>
+<span class="font-medium">Data Analysis Agent</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+<span class="size-1.5 rounded-full bg-primary"></span>
+                                        Active
+                                    </span>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">3 days ago</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all">
+<span class="material-symbols-outlined text-lg">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Pagination Footer -->
+<div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+<p class="text-sm text-slate-500">Showing 1 to 4 of 24 sessions</p>
+<div class="flex items-center gap-1">
+<button class="size-9 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="size-9 flex items-center justify-center rounded-lg bg-primary text-white font-bold text-sm shadow-sm">1</button>
+<button class="size-9 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 font-medium text-sm transition-colors">2</button>
+<button class="size-9 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 font-medium text-sm transition-colors">3</button>
+<span class="px-2 text-slate-400">...</span>
+<button class="size-9 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 font-medium text-sm transition-colors">6</button>
+<button class="size-9 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Footer Support -->
+<footer class="mt-12 flex items-center justify-center gap-8 py-6 text-sm text-slate-400">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">verified_user</span>
+<span>Enterprise Grade Security</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">speed</span>
+<span>Real-time Sync</span>
+</div>
+</footer>
+</div>
+</main>
+</div>
+</body></html>
