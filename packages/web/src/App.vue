@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import SessionList from './views/SessionList.vue';
 </script>
 
 <template>
-  <SessionList />
+  <router-view />
 </template>
 
 <style>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Session Details Chat Interface</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#197fe6",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111921",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 10px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #374151;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
+<div class="flex flex-col h-screen max-w-7xl mx-auto bg-white dark:bg-slate-900 shadow-xl overflow-hidden">
+<!-- Top Toolbar -->
+<header class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 z-10">
+<div class="flex items-center gap-3">
+<div class="bg-primary/10 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined block">schema</span>
+</div>
+<div>
+<h1 class="text-lg font-bold leading-tight tracking-tight">Session: AI Workflow #123</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400">上次更新于 2023年10月24日 14:30</p>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+<span class="material-symbols-outlined text-[18px]">history</span>
+<span>加载快照</span>
+</button>
+<button class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span>新建快照</span>
+</button>
+</div>
+</header>
+<!-- Message Display Area -->
+<main class="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50">
+<!-- AI Message -->
+<div class="flex items-start gap-4 max-w-4xl">
+<div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0 border border-primary/20">
+<span class="material-symbols-outlined text-primary text-[20px]">smart_toy</span>
+</div>
+<div class="flex flex-col gap-2 flex-1">
+<div class="flex items-center gap-2">
+<span class="text-sm font-bold">AI Assistant</span>
+<span class="text-[11px] text-slate-400 uppercase">10:42 AM</span>
+</div>
+<div class="bg-white dark:bg-slate-800 p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-300 leading-relaxed">
+                        您好！我是您的 AI 工作流助手。我已经为您准备好了关于 <strong>Data Processing Task</strong> 的最新分析报告。您可以选择查看摘要，或者直接加载相关的系统快照来继续操作。
+                    </div>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex items-start gap-4 max-w-4xl ml-auto flex-row-reverse">
+<div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400 text-[20px]">person</span>
+</div>
+<div class="flex flex-col gap-2 flex-1 items-end">
+<div class="flex items-center gap-2 flex-row-reverse">
+<span class="text-sm font-bold">Administrator</span>
+<span class="text-[11px] text-slate-400 uppercase">10:45 AM</span>
+</div>
+<div class="bg-primary text-white p-4 rounded-2xl rounded-tr-none shadow-sm text-sm leading-relaxed max-w-[85%]">
+                        请显示最后一次数据处理任务的快照详情，并帮我对比一下今天的执行效率与昨天的差异。
+                    </div>
+</div>
+</div>
+<!-- AI Message with Snapshot Card -->
+<div class="flex items-start gap-4 max-w-4xl">
+<div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0 border border-primary/20">
+<span class="material-symbols-outlined text-primary text-[20px]">smart_toy</span>
+</div>
+<div class="flex flex-col gap-3 flex-1">
+<div class="flex items-center gap-2">
+<span class="text-sm font-bold">AI Assistant</span>
+<span class="text-[11px] text-slate-400 uppercase">10:46 AM</span>
+</div>
+<div class="bg-white dark:bg-slate-800 p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-300 leading-relaxed">
+                        明白。我已检索到最近的快照信息。
+                        <div class="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 flex items-center gap-4 group cursor-pointer hover:border-primary/50 transition-colors">
+<div class="w-12 h-12 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-600 shadow-sm overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="Data visualization dashboard preview" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKbZUNbokw803H6WYX_0-FlVajaIUOcLAs_GZD9JXMVF7sDyGmH65i3lEIbdBIeNiO45wyPoO77snNakK2qnxmV6mtCWdAM5qCXlqVL432U91oBaLKmcDFfi76joKsgu-qS51IXP4vL4vdDPAXabp2cCwWnpi1jUJIxj9N-rj8kS556SCyCoyVUNDECb5AI3-lCZFvQhMwS965E55calvy2dNYWg0eqy2gowMkFmq7cexCxvyQP2rYEthqD7ofZfxXLo7Jz_b9QC1b"/>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-slate-900 dark:text-white">Data Processing Snapshot v1.2</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">包含节点配置、内存状态及环境变量参数。</p>
+</div>
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">download</span>
+</div>
+<div class="mt-4">
+                            效率分析：
+                            <ul class="list-disc list-inside mt-2 space-y-1 text-sm">
+<li><strong>处理时长：</strong> 减少了 12% (今日 42s vs 昨日 48s)</li>
+<li><strong>错误率：</strong> 维持在 0.01%</li>
+<li><strong>吞吐量：</strong> 提高了 8,500 ops/sec</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Fixed Input Area -->
+<div class="p-6 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+<div class="max-w-4xl mx-auto">
+<div class="relative group">
+<div class="absolute inset-0 bg-primary/5 rounded-xl blur-md opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
+<div class="relative flex flex-col bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm group-focus-within:border-primary/50 transition-all">
+<div class="flex items-center gap-2 px-4 py-2 border-b border-slate-50 dark:border-slate-700/50">
+<button class="p-1 text-slate-400 hover:text-primary transition-colors" title="附件">
+<span class="material-symbols-outlined text-[20px]">attach_file</span>
+</button>
+<button class="p-1 text-slate-400 hover:text-primary transition-colors" title="表情">
+<span class="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
+</button>
+<div class="h-4 w-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
+<button class="p-1 text-slate-400 hover:text-primary transition-colors" title="语音输入">
+<span class="material-symbols-outlined text-[20px]">mic</span>
+</button>
+<button class="p-1 text-slate-400 hover:text-primary transition-colors" title="代码块">
+<span class="material-symbols-outlined text-[20px]">code</span>
+</button>
+</div>
+<textarea class="w-full min-h-[100px] max-h-[300px] p-4 text-slate-800 dark:text-slate-100 bg-transparent border-none focus:ring-0 resize-none text-sm placeholder:text-slate-400" placeholder="输入消息或指令，使用 / 触发快捷菜单..."></textarea>
+<div class="flex items-center justify-between px-4 pb-4">
+<div class="flex gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600">
+                                    GPT-4o
+                                </span>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-100 dark:border-green-800/30">
+                                    Connected
+                                </span>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20 active:scale-95">
+<span>发送</span>
+<span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+</div>
+</div>
+</div>
+<div class="mt-3 flex justify-center">
+<p class="text-[10px] text-slate-400">按 Enter 发送，Shift + Enter 换行</p>
+</div>
+</div>
+</div>
+</div>
+</body></html>
