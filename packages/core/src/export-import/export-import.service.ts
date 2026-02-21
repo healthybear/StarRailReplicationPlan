@@ -6,18 +6,22 @@ import type {
   SceneConfig,
   SessionState,
   Snapshot,
+  Faction,
+  PlotGraphConfig,
 } from '@star-rail/types';
 import {
   CharacterSchema as CharSchema,
   SceneConfigSchema as SceneSchema,
   SessionStateSchema,
   SnapshotSchema,
+  FactionSchema,
+  PlotGraphConfigSchema,
 } from '@star-rail/types';
 
 /**
  * 导出类型
  */
-export type ExportType = 'character' | 'scene' | 'session';
+export type ExportType = 'character' | 'scene' | 'session' | 'faction' | 'plot';
 
 /**
  * 冲突策略
@@ -672,6 +676,12 @@ export class ExportImportService {
         case 'session':
           parseResult = SessionStateSchema.safeParse(pkg.data);
           break;
+        case 'faction':
+          parseResult = FactionSchema.safeParse(pkg.data);
+          break;
+        case 'plot':
+          parseResult = PlotGraphConfigSchema.safeParse(pkg.data);
+          break;
         default:
           return { valid: false, error: `未知类型: ${pkg.metadata.type}` };
       }
@@ -883,6 +893,162 @@ export class ExportImportService {
         success: false,
         error: `导入失败: ${(error as Error).message}`,
       };
+    }
+  }
+
+  // ==================== P3-EI-01 势力/剧情图/主题导出导入 ====================
+
+  /**
+   * 导出势力数据
+   * P3-EI-01: 势力/情节线/主题导出与复用
+   * @param faction 势力数据
+   * @param options 导出选项
+   */
+  async exportFaction(
+    faction: Faction,
+    options?: {
+      filename?: string;
+      description?: string;
+      sourceSessionId?: string;
+    }
+  ): Promise<string> {
+    const pkg: ExportPackage<Faction> = {
+      metadata: {
+        version: '1.0.0',
+        type: 'faction',
+        exportedAt: Date.now(),
+        dependencies: faction.members,
+        sourceSessionId: options?.sourceSessionId,
+        description: options?.description,
+      },
+      data: faction,
+    };
+
+    const filePath = path.join(
+      this.exportDir,
+      'factions',
+      options?.filename || `${faction.id}.json`
+    );
+    await fs.ensureDir(path.dirname(filePath));
+    await fs.writeJson(filePath, pkg, { spaces: 2 });
+    return filePath;
+  }
+
+  /**
+   * 导入势力数据
+   * P3-EI-01: 势力/情节线/主题导出与复用
+   * @param filePath 文件路径
+   * @param options 导入选项
+   */
+  async importFaction(
+    filePath: string,
+    options?: ImportOptions & { existingFactionIds?: string[] }
+  ): Promise<ImportResult<Faction>> {
+    try {
+      const pkg = await fs.readJson(filePath);
+
+      if (pkg.metadata?.type !== 'faction') {
+        return { success: false, error: '文件类型不匹配，期望 faction 类型' };
+      }
+
+      const parsed = FactionSchema.safeParse(pkg.data);
+      if (!parsed.success) {
+        return {
+          success: false,
+          error: `数据校验失败: ${parsed.error.message}`,
+        };
+      }
+
+      const faction = parsed.data;
+      const conflicts: ConflictInfo[] = [];
+
+      if (options?.existingFactionIds?.includes(faction.id)) {
+        conflicts.push({
+          type: 'id_conflict',
+          resourceId: faction.id,
+          description: `势力 ID "${faction.id}" 已存在`,
+          existingResource: faction.id,
+        });
+      }
+
+      if (conflicts.length > 0) {
+        const strategy = options?.conflictStrategy || 'reject';
+        if (strategy === 'reject') {
+          return { success: false, error: '存在 ID 冲突', conflicts };
+        } else if (strategy === 'rename') {
+          const newId = `${faction.id}_${Date.now()}`;
+          faction.id = newId;
+          return { success: true, data: faction, conflicts, newId };
+        }
+      }
+
+      return { success: true, data: faction };
+    } catch (error) {
+      return { success: false, error: `导入失败: ${(error as Error).message}` };
+    }
+  }
+
+  /**
+   * 导出剧情图配置
+   * P3-EI-01: 势力/情节线/主题导出与复用
+   * @param plotGraph 剧情图配置
+   * @param options 导出选项
+   */
+  async exportPlotGraph(
+    plotGraph: PlotGraphConfig,
+    options?: {
+      filename?: string;
+      description?: string;
+      sourceSessionId?: string;
+      themes?: string[];
+    }
+  ): Promise<string> {
+    const pkg: ExportPackage<PlotGraphConfig> & { themes?: string[] } = {
+      metadata: {
+        version: '1.0.0',
+        type: 'plot',
+        exportedAt: Date.now(),
+        dependencies: [],
+        sourceSessionId: options?.sourceSessionId,
+        description: options?.description,
+      },
+      data: plotGraph,
+      themes: options?.themes,
+    };
+
+    const filename = options?.filename || `plot_${plotGraph.startNodeId}.json`;
+    const filePath = path.join(this.exportDir, 'plots', filename);
+    await fs.ensureDir(path.dirname(filePath));
+    await fs.writeJson(filePath, pkg, { spaces: 2 });
+    return filePath;
+  }
+
+  /**
+   * 导入剧情图配置
+   * P3-EI-01: 势力/情节线/主题导出与复用
+   * @param filePath 文件路径
+   */
+  async importPlotGraph(
+    filePath: string
+  ): Promise<ImportResult<PlotGraphConfig> & { themes?: string[] }> {
+    try {
+      const pkg = await fs.readJson(filePath);
+
+      if (pkg.metadata?.type !== 'plot') {
+        return { success: false, error: '文件类型不匹配，期望 plot 类型' };
+      }
+
+      const parsed = PlotGraphConfigSchema.safeParse(pkg.data);
+      if (!parsed.success) {
+        return {
+          success: false,
+          error: `数据校验失败: ${parsed.error.message}`,
+        };
+      }
+
+      return { success: true, data: parsed.data, themes: pkg.themes };
+    } catch (error) {
+      return { success: false, error: `导入失败: ${(error as Error).message}` };
     }
   }
 }

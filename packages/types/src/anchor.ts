@@ -91,6 +91,64 @@ export const ComparisonResultSchema = z.object({
 export type ComparisonResult = z.infer<typeof ComparisonResultSchema>;
 
 /**
+ * 维度权重配置 Schema（P3-AE-02）
+ * 控制各对比维度在总体贴合度评分中的权重
+ */
+export const DimensionWeightsSchema = z.object({
+  /** 视野维度权重（默认 1.0） */
+  vision: z.number().min(0).optional(),
+  /** 关系维度权重（默认 1.0） */
+  relationships: z.number().min(0).optional(),
+  /** 判断维度权重（默认 1.0） */
+  judgment: z.number().min(0).optional(),
+});
+
+export type DimensionWeights = z.infer<typeof DimensionWeightsSchema>;
+
+/**
+ * 评分规则配置 Schema（P3-AE-02）
+ * 可配置的贴合度评分规则
+ */
+export const ScoringConfigSchema = z.object({
+  /** 配置版本 */
+  version: z.string(),
+  /** 维度权重 */
+  weights: DimensionWeightsSchema.optional(),
+  /**
+   * 差异度到贴合度分数的映射阈值
+   * divergence < lowThreshold  → 高贴合（score ≥ 0.8）
+   * divergence < highThreshold → 中贴合（score ≥ 0.5）
+   * 否则                       → 低贴合（score < 0.5）
+   */
+  lowThreshold: z.number().min(0).max(1).optional(),
+  highThreshold: z.number().min(0).max(1).optional(),
+});
+
+export type ScoringConfig = z.infer<typeof ScoringConfigSchema>;
+
+/**
+ * 加权对比结果 Schema（P3-AE-02）
+ * 在 ComparisonResult 基础上增加加权贴合度分数
+ */
+export const WeightedComparisonResultSchema = ComparisonResultSchema.extend({
+  /** 加权贴合度分数 (0-1，越高越贴合) */
+  fitScore: z.number().min(0).max(1),
+  /** 各维度加权得分明细 */
+  dimensionScores: z.array(
+    z.object({
+      name: z.string(),
+      weight: z.number(),
+      rawDivergence: z.number(),
+      weightedScore: z.number(),
+    })
+  ),
+});
+
+export type WeightedComparisonResult = z.infer<
+  typeof WeightedComparisonResultSchema
+>;
+
+/**
  * 生成锚点 ID
  */
 export function generateAnchorId(): string {

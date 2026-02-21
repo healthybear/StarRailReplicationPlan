@@ -696,4 +696,135 @@ describe('AnchorEvaluator', () => {
       expect(judgmentDim).toBeUndefined();
     });
   });
+
+  // ==================== P3-AE-02 加权评分 ====================
+
+  describe('Weighted Scoring (P3-AE-02)', () => {
+    it('无差异时 fitScore 为 1', () => {
+      const anchor = createTestAnchor('a1', [
+        createTestCharacterState('march7', '三月七', ['info_1']),
+      ]);
+      const session = createTestSession({
+        march7: createFullCharacter('march7', '三月七', ['info_1']),
+      });
+
+      evaluator.loadScoringConfig({ version: '1.0' });
+      const result = evaluator.compareWeighted(session, anchor);
+
+      expect(result.fitScore).toBe(1.0);
+      expect(result.dimensionScores).toHaveLength(0);
+    });
+
+    it('有差异时 fitScore < 1', () => {
+      const anchor = createTestAnchor('a1', [
+        createTestCharacterState('march7', '三月七', ['info_1', 'info_2']),
+      ]);
+      const session = createTestSession({
+        march7: createFullCharacter('march7', '三月七', []),
+      });
+
+      evaluator.loadScoringConfig({ version: '1.0' });
+      const result = evaluator.compareWeighted(session, anchor);
+
+      expect(result.fitScore).toBeLessThan(1.0);
+      expect(result.fitScore).toBeGreaterThanOrEqual(0);
+    });
+
+    it('视野权重为 0 时视野差异不影响 fitScore', () => {
+      const anchor = createTestAnchor('a1', [
+        createTestCharacterState('march7', '三月七', ['info_1', 'info_2']),
+      ]);
+      const session = createTestSession({
+        march7: createFullCharacter('march7', '三月七', []),
+      });
+
+      evaluator.loadScoringConfig({
+        version: '1.0',
+        weights: { vision: 0 },
+      });
+      const result = evaluator.compareWeighted(session, anchor);
+
+      // 视野权重为 0，加权得分应为 0/0 → fitScore = 1
+      expect(result.fitScore).toBe(1.0);
+    });
+
+    it('自定义阈值影响 overallAssessment', () => {
+      const anchor = createTestAnchor('a1', [
+        createTestCharacterState('march7', '三月七', ['info_1', 'info_2']),
+      ]);
+      const session = createTestSession({
+        march7: createFullCharacter('march7', '三月七', ['info_1']),
+      });
+
+      evaluator.loadScoringConfig({
+        version: '1.0',
+        lowThreshold: 0.01, // 极低阈值，任何差异都视为"一定差异"
+        highThreshold: 0.99,
+      });
+      const result = evaluator.compareWeighted(session, anchor);
+
+      expect(result.overallAssessment).toContain('贴合度');
+    });
+
+    it('compareStorylineWeighted 返回剧情线所有锚点的加权结果', () => {
+      const anchor1 = createTestAnchor('a1', [
+        createTestCharacterState('march7', '三月七', ['info_1']),
+      ]);
+      anchor1.storylineId = 'main';
+      anchor1.sequence = 1;
+
+      const anchor2 = createTestAnchor('a2', [
+        createTestCharacterState('march7', '三月七', ['info_1', 'info_2']),
+      ]);
+      anchor2.storylineId = 'main';
+      anchor2.sequence = 2;
+
+      evaluator.addAnchor(anchor1);
+      evaluator.addAnchor(anchor2);
+
+      const session = createTestSession({
+        march7: createFullCharacter('march7', '三月七', ['info_1']),
+      });
+
+      evaluator.loadScoringConfig({ version: '1.0' });
+      const results = evaluator.compareStorylineWeighted(session, 'main');
+
+      expect(results).toHaveLength(2);
+      expect(results[0].fitScore).toBeDefined();
+      expect(results[1].fitScore).toBeDefined();
+      // 第一个锚点完全匹配，fitScore 应为 1
+      expect(results[0].fitScore).toBe(1.0);
+      // 第二个锚点有差异，fitScore < 1
+      expect(results[1].fitScore).toBeLessThan(1.0);
+    });
+
+    it('dimensionScores 包含各维度权重明细', () => {
+      const anchor = createTestAnchor('a1', [
+        createTestCharacterState('march7', '三月七', ['info_1', 'info_2'], {
+          stelle: 0.8,
+        }),
+      ]);
+      const session = createTestSession({
+        march7: createFullCharacter('march7', '三月七', ['info_1'], {
+          stelle: { trust: 0.3, hostility: 0, intimacy: 0.5, respect: 0.5 },
+        }),
+      });
+
+      evaluator.loadScoringConfig({
+        version: '1.0',
+        weights: { vision: 2.0, relationships: 1.0 },
+      });
+      const result = evaluator.compareWeighted(session, anchor);
+
+      const visionScore = result.dimensionScores.find((s) =>
+        s.name.includes('视野')
+      );
+      expect(visionScore?.weight).toBe(2.0);
+
+      const relScore = result.dimensionScores.find((s) =>
+        s.name.includes('信任度')
+      );
+      expect(relScore?.weight).toBe(1.0);
+    });
+  });
 });

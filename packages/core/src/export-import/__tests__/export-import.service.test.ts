@@ -716,4 +716,153 @@ describe('ExportImportService', () => {
       expect(session.characters['march7'].state.abilities.combat).toBe(80);
     });
   });
+
+  // ==================== P3-EI-01 势力/剧情图导出导入 ====================
+
+  describe('Faction Export/Import (P3-EI-01)', () => {
+    const createTestFaction = () => ({
+      id: 'faction_astral',
+      name: '星穹列车',
+      description: '穿越星际的列车',
+      members: ['march7', 'stelle'],
+      goals: ['探索宇宙'],
+      tags: ['main'],
+    });
+
+    it('导出势力到 JSON 文件', async () => {
+      const faction = createTestFaction();
+      const filePath = await service.exportFaction(faction);
+
+      expect(await fs.pathExists(filePath)).toBe(true);
+      const pkg = await fs.readJson(filePath);
+      expect(pkg.metadata.type).toBe('faction');
+      expect(pkg.data.id).toBe('faction_astral');
+    });
+
+    it('导入势力成功', async () => {
+      const faction = createTestFaction();
+      const filePath = await service.exportFaction(faction);
+
+      const result = await service.importFaction(filePath);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.id).toBe('faction_astral');
+      expect(result.data?.members).toContain('march7');
+    });
+
+    it('ID 冲突时 reject 策略拒绝导入', async () => {
+      const faction = createTestFaction();
+      const filePath = await service.exportFaction(faction);
+
+      const result = await service.importFaction(filePath, {
+        existingFactionIds: ['faction_astral'],
+        conflictStrategy: 'reject',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.conflicts?.length).toBeGreaterThan(0);
+    });
+
+    it('ID 冲突时 rename 策略生成新 ID', async () => {
+      const faction = createTestFaction();
+      const filePath = await service.exportFaction(faction);
+
+      const result = await service.importFaction(filePath, {
+        existingFactionIds: ['faction_astral'],
+        conflictStrategy: 'rename',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.newId).toBeDefined();
+      expect(result.data?.id).not.toBe('faction_astral');
+    });
+
+    it('文件类型不匹配时返回错误', async () => {
+      const character = createTestCharacter('march7', '三月七');
+      const charPath = await service.exportCharacter(character);
+
+      const result = await service.importFaction(charPath);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('faction');
+    });
+  });
+
+  describe('PlotGraph Export/Import (P3-EI-01)', () => {
+    const createTestPlotGraph = () => ({
+      version: '1.0',
+      startNodeId: 'node_start',
+      nodes: {
+        node_start: {
+          id: 'node_start',
+          name: '开始节点',
+          branches: [
+            {
+              id: 'branch_1',
+              name: '分支一',
+              outcomes: [],
+              nextNodeId: 'node_end',
+            },
+          ],
+          isTerminal: false,
+        },
+        node_end: {
+          id: 'node_end',
+          name: '结束节点',
+          branches: [],
+          isTerminal: true,
+        },
+      },
+    });
+
+    it('导出剧情图到 JSON 文件（含主题标签）', async () => {
+      const plotGraph = createTestPlotGraph();
+      const filePath = await service.exportPlotGraph(plotGraph, {
+        themes: ['friendship', 'adventure'],
+        description: '主线剧情',
+      });
+
+      expect(await fs.pathExists(filePath)).toBe(true);
+      const pkg = await fs.readJson(filePath);
+      expect(pkg.metadata.type).toBe('plot');
+      expect(pkg.themes).toEqual(['friendship', 'adventure']);
+    });
+
+    it('导入剧情图成功并保留主题标签', async () => {
+      const plotGraph = createTestPlotGraph();
+      const filePath = await service.exportPlotGraph(plotGraph, {
+        themes: ['friendship'],
+      });
+
+      const result = await service.importPlotGraph(filePath);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.startNodeId).toBe('node_start');
+      expect(result.data?.nodes['node_start']).toBeDefined();
+      expect(result.themes).toEqual(['friendship']);
+    });
+
+    it('导入的剧情图可参与新剧情（节点结构完整）', async () => {
+      const plotGraph = createTestPlotGraph();
+      const filePath = await service.exportPlotGraph(plotGraph);
+
+      const result = await service.importPlotGraph(filePath);
+
+      expect(result.success).toBe(true);
+      const imported = result.data!;
+      // 验证节点结构完整，可用于新剧情
+      expect(Object.keys(imported.nodes)).toHaveLength(2);
+      expect(imported.nodes['node_end'].isTerminal).toBe(true);
+    });
+
+    it('文件类型不匹配时返回错误', async () => {
+      const character = createTestCharacter('march7', '三月七');
+      const charPath = await service.exportCharacter(character);
+
+      const result = await service.importPlotGraph(charPath);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('plot');
+    });
+  });
 });

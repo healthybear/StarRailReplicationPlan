@@ -78,6 +78,9 @@ export {
   AnchorSchema,
   ComparisonDimensionSchema,
   ComparisonResultSchema,
+  DimensionWeightsSchema,
+  ScoringConfigSchema,
+  WeightedComparisonResultSchema,
   generateAnchorId,
 } from './anchor.js';
 export type {
@@ -85,6 +88,9 @@ export type {
   Anchor,
   ComparisonDimension,
   ComparisonResult,
+  DimensionWeights,
+  ScoringConfig,
+  WeightedComparisonResult,
 } from './anchor.js';
 
 // Faction types

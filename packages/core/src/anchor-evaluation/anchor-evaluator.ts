@@ -5,6 +5,8 @@ import type {
   ComparisonResult,
   ComparisonDimension,
   AnchorCharacterState,
+  ScoringConfig,
+  WeightedComparisonResult,
 } from '@star-rail/types';
 import { generateAnchorId } from '@star-rail/types';
 import type { StateSnapshot } from '../story-orchestrator/story-orchestrator.js';
@@ -54,6 +56,113 @@ export class AnchorEvaluator {
 
   /** 按剧情线索引 */
   private anchorsByStoryline: Map<string, string[]> = new Map();
+
+  /** 评分规则配置（P3-AE-02） */
+  private scoringConfig: ScoringConfig | null = null;
+
+  // ==================== P3-AE-02 评分规则配置 ====================
+
+  /**
+   * 加载评分规则配置
+   * P3-AE-02: 贴合度权重与评分规则可配置
+   */
+  loadScoringConfig(config: ScoringConfig): void {
+    this.scoringConfig = config;
+  }
+
+  /**
+   * 获取当前评分配置
+   */
+  getScoringConfig(): ScoringConfig | null {
+    return this.scoringConfig;
+  }
+
+  /**
+   * 加权对比：在 compare 基础上计算加权贴合度分数
+   * P3-AE-02: 至少 1 条完整剧情线含锚点，对比报告可生成
+   * @param session 当前会话状态
+   * @param anchor 锚点数据
+   * @param options 对比选项
+   */
+  compareWeighted(
+    session: SessionState,
+    anchor: Anchor,
+    options?: CompareOptions
+  ): WeightedComparisonResult {
+    const base = this.compare(session, anchor, options);
+
+    const weights = this.scoringConfig?.weights ?? {};
+    const visionWeight = weights.vision ?? 1.0;
+    const relWeight = weights.relationships ?? 1.0;
+    const judgmentWeight = weights.judgment ?? 1.0;
+
+    const lowThreshold = this.scoringConfig?.lowThreshold ?? 0.2;
+    const highThreshold = this.scoringConfig?.highThreshold ?? 0.5;
+
+    // 按维度名称分类计算加权得分
+    const dimensionScores: WeightedComparisonResult['dimensionScores'] = [];
+    let weightedSum = 0;
+    let totalWeight = 0;
+
+    for (const dim of base.dimensions) {
+      let weight = 1.0;
+      if (dim.name.includes('视野')) weight = visionWeight;
+      else if (dim.name.includes('信任度') || dim.name.includes('关系'))
+        weight = relWeight;
+      else if (dim.name.includes('判断')) weight = judgmentWeight;
+
+      const weightedScore = (1 - dim.divergence) * weight;
+      dimensionScores.push({
+        name: dim.name,
+        weight,
+        rawDivergence: dim.divergence,
+        weightedScore,
+      });
+      weightedSum += weightedScore;
+      totalWeight += weight;
+    }
+
+    // 无维度时贴合度为 1（完全一致）
+    const fitScore =
+      totalWeight > 0
+        ? Math.min(1, Math.max(0, weightedSum / totalWeight))
+        : 1.0;
+
+    // 根据阈值生成评价（覆盖 base 的 overallAssessment）
+    const divergence = 1 - fitScore;
+    let overallAssessment = base.overallAssessment;
+    if (base.differences.length === 0) {
+      overallAssessment = '当前分支与原剧情高度一致，没有明显差异。';
+    } else if (divergence < lowThreshold) {
+      overallAssessment = `当前分支与原剧情基本一致，贴合度 ${(fitScore * 100).toFixed(1)}%。`;
+    } else if (divergence < highThreshold) {
+      overallAssessment = `当前分支与原剧情存在一定差异，贴合度 ${(fitScore * 100).toFixed(1)}%。`;
+    } else {
+      overallAssessment = `当前分支与原剧情差异较大，贴合度 ${(fitScore * 100).toFixed(1)}%。`;
+    }
+
+    return {
+      ...base,
+      overallAssessment,
+      fitScore,
+      dimensionScores,
+    };
+  }
+
+  /**
+   * 对整条剧情线生成加权对比报告
+   * P3-AE-02: 至少 1 条完整剧情线含锚点，对比报告可生成
+   */
+  compareStorylineWeighted(
+    session: SessionState,
+    storylineId: string,
+    options?: CompareOptions
+  ): WeightedComparisonResult[] {
+    const anchors = this.getAnchorsByStoryline(storylineId);
+    return anchors.map((anchor) =>
+      this.compareWeighted(session, anchor, options)
+    );
+  }
 
   // ==================== 锚点管理 (P1-AE-01) ====================
 
