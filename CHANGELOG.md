@@ -4,6 +4,71 @@
 
 ---
 
+## [3.0.0-dev] - 2026-02-21
+
+### Phase 3 功能扩展
+
+#### 新增
+
+**P3-AE-02 贴合度权重评分可配置**
+
+- 新增类型：`DimensionWeights`、`ScoringConfig`、`WeightedComparisonResult`（`packages/types`）
+- `AnchorEvaluator.loadScoringConfig`：从配置对象加载权重和阈值
+- `AnchorEvaluator.compareWeighted`：返回 `fitScore`（0-1）和 `dimensionScores` 明细
+- `AnchorEvaluator.compareStorylineWeighted`：批量加权对比剧情线所有锚点
+
+**P3-EI-01 势力/剧情图导出复用**
+
+- `ExportImportService.exportFaction` / `importFaction`：势力数据导出导入，支持冲突检测
+- `ExportImportService.exportPlotGraph` / `importPlotGraph`：剧情图导出导入，保留主题标签
+- `ExportType` 扩展：新增 `'faction'` 和 `'plot'` 类型
+
+**P3-AE-01 主题定义与一致性评估**
+
+- `AnchorEvaluator.defineTheme`：注册主题 ID 与关键词列表
+- `AnchorEvaluator.evaluateThemeConsistency`：返回覆盖率、已覆盖/缺失主题及匹配锚点
+- `AnchorEvaluator.getStorylineThemes`：汇总剧情线所有锚点主题标签
+
+**P3-CS-01 演化约束与合理性规则**
+
+- 新增接口：`EvolutionConstraint`、`ConstraintViolation`
+- `CharacterStateService.loadEvolutionConstraints`：批量注册 min/max/maxDelta 约束
+- `CharacterStateService.applyConstraint`：对单次变更执行 clamp 和 delta 限制
+- `CharacterStateService.updateAbilityConstrained`：更新能力值并返回违规信息
+
+**P3-INF-01 性能与存储限制**
+
+- `StoryOrchestrator.configurePerformance`：设置最大快照数和响应时间阈值
+- `createSnapshot` 超出上限时自动裁剪最旧快照
+- `AdvanceResult` 新增 `durationMs` 字段，超阈值时打印警告日志
+
+**P3-SO-01 死局处理与异常逻辑**
+
+- `StoryOrchestrator.configureDeadEndFallback`：配置死局兜底提示文本
+- `StoryOrchestrator.detectDeadEnd`：检测最近 N 条响应是否内容完全相同
+- `StoryOrchestrator.rollbackToLastValidSnapshot`：回滚到最近一个有角色数据的快照
+- `AdvanceResult` 新增 `deadEndFallback` 字段
+
+**P3-UI-01 状态可视化与对比分维度视图**
+
+- 新增组件：`AbilityRadarChart.vue`（SVG 雷达图，支持原剧情叠加对比）
+- 新增组件：`CharacterRelationshipGraph.vue`（SVG 关系网络图，信任度颜色/粗细编码）
+- 新增组件：`VisionTimeline.vue`（视野变化时间线）
+- 新增组件：`DimensionComparisonView.vue`（加权分维度对比卡片）
+- 新增视图：`StateVisualization.vue`（4 标签页集成视图，路由 `/session/:id/visualization`）
+- `StoryAdvance.vue` 工具栏新增「状态可视化」导航入口
+
+#### 测试
+
+- `@star-rail/core`：419 个测试，100% 通过（+34 个）
+- 总计：419 个测试，0 失败
+
+#### 文档
+
+- 新增模块文档：`docs/modules/DEV-P3-Phase3功能扩展.md`
+
+---
+
 ## [2.0.0-dev] - 2026-02-21
 
 ### Phase 2 功能扩展
