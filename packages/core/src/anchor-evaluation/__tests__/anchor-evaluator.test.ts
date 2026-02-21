@@ -827,4 +827,113 @@ describe('AnchorEvaluator', () => {
       expect(relScore?.weight).toBe(1.0);
     });
   });
+
+  // ==================== P3-AE-01 主题一致性评估 ====================
+
+  describe('Theme Consistency (P3-AE-01)', () => {
+    const makeAnchorWithThemes = (
+      id: string,
+      themes: string[],
+      seq: number
+    ) => {
+      const a = createTestAnchor(id);
+      a.storylineId = 'main';
+      a.sequence = seq;
+      a.themes = themes;
+      return a;
+    };
+
+    it('所有期望主题均覆盖时 score 为 1', () => {
+      evaluator.addAnchor(makeAnchorWithThemes('a1', ['friendship'], 1));
+      evaluator.addAnchor(makeAnchorWithThemes('a2', ['adventure'], 2));
+
+      evaluator.defineTheme('friendship', ['friendship']);
+      evaluator.defineTheme('adventure', ['adventure']);
+
+      const result = evaluator.evaluateThemeConsistency('main', [
+        'friendship',
+        'adventure',
+      ]);
+
+      expect(result.score).toBe(1.0);
+      expect(result.coveredThemes).toContain('friendship');
+      expect(result.coveredThemes).toContain('adventure');
+      expect(result.missingThemes).toHaveLength(0);
+    });
+
+    it('部分主题缺失时 score < 1', () => {
+      evaluator.addAnchor(makeAnchorWithThemes('a1', ['friendship'], 1));
+
+      evaluator.defineTheme('friendship', ['friendship']);
+      evaluator.defineTheme('betrayal', ['betrayal']);
+
+      const result = evaluator.evaluateThemeConsistency('main', [
+        'friendship',
+        'betrayal',
+      ]);
+
+      expect(result.score).toBe(0.5);
+      expect(result.missingThemes).toContain('betrayal');
+    });
+
+    it('无锚点时 score 为 0', () => {
+      const result = evaluator.evaluateThemeConsistency('empty_line', [
+        'friendship',
+      ]);
+      expect(result.score).toBe(0);
+    });
+
+    it('无期望主题时 score 为 1', () => {
+      evaluator.addAnchor(makeAnchorWithThemes('a1', ['friendship'], 1));
+      const result = evaluator.evaluateThemeConsistency('main', []);
+      expect(result.score).toBe(1.0);
+    });
+
+    it('主题关键词匹配（别名）', () => {
+      evaluator.addAnchor(makeAnchorWithThemes('a1', ['bond'], 1));
+      // 定义 friendship 主题，关键词包含 bond
+      evaluator.defineTheme('friendship', ['friendship', 'bond', 'trust']);
+
+      const result = evaluator.evaluateThemeConsistency('main', ['friendship']);
+
+      expect(result.score).toBe(1.0);
+      expect(result.coveredThemes).toContain('friendship');
+    });
+
+    it('getStorylineThemes 返回剧情线所有主题标签', () => {
+      evaluator.addAnchor(
+        makeAnchorWithThemes('a1', ['friendship', 'hope'], 1)
+      );
+      evaluator.addAnchor(makeAnchorWithThemes('a2', ['adventure'], 2));
+
+      const themes = evaluator.getStorylineThemes('main');
+
+      expect(themes).toContain('friendship');
+      expect(themes).toContain('hope');
+      expect(themes).toContain('adventure');
+    });
+
+    it('details 包含每个主题的覆盖情况', () => {
+      evaluator.addAnchor(makeAnchorWithThemes('a1', ['friendship'], 1));
+      evaluator.defineTheme('friendship', ['friendship']);
+      evaluator.defineTheme('betrayal', ['betrayal']);
+
+      const result = evaluator.evaluateThemeConsistency('main', [
+        'friendship',
+        'betrayal',
+      ]);
+
+      const friendshipDetail = result.details.find(
+        (d) => d.themeId === 'friendship'
+      );
+      const betrayalDetail = result.details.find(
+        (d) => d.themeId === 'betrayal'
+      );
+
+      expect(friendshipDetail?.covered).toBe(true);
+      expect(friendshipDetail?.matchedAnchors).toContain('a1');
+      expect(betrayalDetail?.covered).toBe(false);
+      expect(betrayalDetail?.matchedAnchors).toHaveLength(0);
+    });
+  });
 });

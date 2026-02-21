@@ -38,6 +38,10 @@ export interface AdvanceResult {
     oldValue: number;
     newValue: number;
   }>;
+  /** 响应耗时（毫秒）（P3-INF-01） */
+  durationMs?: number;
+  /** 是否触发死胡同兜底（P3-SO-01） */
+  deadEndFallback?: boolean;
 }
 
 /**
@@ -82,6 +86,16 @@ export class StoryOrchestrator {
   /** 状态快照历史 */
   private snapshotHistory: StateSnapshot[] = [];
 
+  /** 快照数量上限（P3-INF-01，0 表示不限制） */
+  private maxSnapshots: number = 0;
+
+  /** 响应时间告警阈值（毫秒，P3-INF-01，0 表示不监控） */
+  private responseTimeThresholdMs: number = 0;
+
+  /** 死胡同兜底消息（P3-SO-01） */
+  private deadEndFallbackMessage: string =
+    '当前剧情陷入僵局，请尝试其他行动或切换场景。';
+
   constructor(
     @inject('StorageAdapter') private storage: StorageAdapter,
     private visionManager: VisionManager,
@@ -102,6 +116,82 @@ export class StoryOrchestrator {
       console.error('[StoryOrchestrator] inputParser is undefined');
     if (!characterAgent)
       console.error('[StoryOrchestrator] characterAgent is undefined');
+  }
+
+  // ==================== P3-INF-01 性能与存储上限 ====================
+
+  /**
+   * 配置快照上限与响应时间监控
+   * P3-INF-01: 响应时间与存储上限符合设计指标；可配置快照上限
+   * @param maxSnapshots 最大快照数量（0 = 不限制）
+   * @param responseTimeThresholdMs 响应时间告警阈值（0 = 不监控）
+   */
+  configurePerformance(
+    maxSnapshots: number,
+    responseTimeThresholdMs = 0
+  ): void {
+    this.maxSnapshots = maxSnapshots;
+    this.responseTimeThresholdMs = responseTimeThresholdMs;
+  }
+
+  /**
+   * 获取当前快照数量
+   */
+  getSnapshotCount(): number {
+    return this.snapshotHistory.length;
+  }
+
+  /**
+   * 获取性能配置
+   */
+  getPerformanceConfig(): {
+    maxSnapshots: number;
+    responseTimeThresholdMs: number;
+  } {
+    return {
+      maxSnapshots: this.maxSnapshots,
+      responseTimeThresholdMs: this.responseTimeThresholdMs,
+    };
+  }
+
+  // ==================== P3-SO-01 死胡同兜底 ====================
+
+  /**
+   * 配置死胡同兜底消息
+   * P3-SO-01: 无推进路径时提示或触发支线
+   */
+  configureDeadEndFallback(message: string): void {
+    this.deadEndFallbackMessage = message;
+  }
+
+  /**
+   * 检测是否陷入死胡同
+   * P3-SO-01: 连续多轮无有效响应或响应内容重复时判定为死胡同
+   * @param recentResponses 最近几轮的响应列表
+   * @param threshold 重复阈值（默认 3 轮）
+   */
+  detectDeadEnd(recentResponses: AgentResponse[], threshold = 3): boolean {
+    if (recentResponses.length < threshold) return false;
+    const last = recentResponses.slice(-threshold);
+    // 所有响应内容完全相同则判定为死胡同
+    const firstContent = last[0].content;
+    return last.every((r) => r.content === firstContent);
+  }
+
+  /**
+   * 尝试从损坏快照回滚到最近有效快照
+   * P3-SO-01: 状态/快照损坏时回滚与提示
+   * @returns 最近有效快照，或 null（无可用快照）
+   */
+  rollbackToLastValidSnapshot(): StateSnapshot | null {
+    // 从最新往旧找第一个有效快照（有角色数据）
+    for (let i = this.snapshotHistory.length - 1; i >= 0; i--) {
+      const snap = this.snapshotHistory[i];
+      if (snap && snap.characters && snap.characters.length > 0) {
+        return snap;
+      }
+    }
+    return null;
   }
 
   /**
@@ -131,6 +221,7 @@ export class StoryOrchestrator {
     scene: SceneConfig,
     triggerRules: TriggerRule[] = []
   ): Promise<AdvanceResult> {
+    const startTime = Date.now();
     // 1. 解析用户输入
     const parsed = this.inputParser.parse(userInput);
 
@@ -230,11 +321,22 @@ export class StoryOrchestrator {
     // 11. 创建状态快照（P1-SO-02）
     this.createSnapshot(session, scene);
 
+    const durationMs = Date.now() - startTime;
+    if (
+      this.responseTimeThresholdMs > 0 &&
+      durationMs > this.responseTimeThresholdMs
+    ) {
+      console.warn(
+        `[StoryOrchestrator] advance 响应时间 ${durationMs}ms 超过阈值 ${this.responseTimeThresholdMs}ms`
+      );
+    }
+
     return {
       success: true,
       responses: [response],
       eventId,
       stateChanges: stateChanges.length > 0 ? stateChanges : undefined,
+      durationMs,
     };
   }
 
@@ -452,6 +554,17 @@ export class StoryOrchestrator {
     };
 
     this.snapshotHistory.push(snapshot);
+
+    // P3-INF-01: 超出上限时移除最旧的快照
+    if (
+      this.maxSnapshots > 0 &&
+      this.snapshotHistory.length > this.maxSnapshots
+    ) {
+      this.snapshotHistory.splice(
+        0,
+        this.snapshotHistory.length - this.maxSnapshots
+      );
+    }
 
     return snapshot;
   }

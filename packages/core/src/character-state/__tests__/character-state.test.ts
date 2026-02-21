@@ -652,4 +652,92 @@ describe('CharacterStateService', () => {
       );
     });
   });
+
+  // ==================== P3-CS-01 演化约束 ====================
+
+  describe('Evolution Constraints (P3-CS-01)', () => {
+    let service: CharacterStateService;
+    let character: Character;
+
+    beforeEach(() => {
+      service = new CharacterStateService(
+        new BehaviorEngine(),
+        new TriggerEngine()
+      );
+      character = createTestCharacter('march7', '三月七');
+      character.state.abilities = { combat: 50 };
+    });
+
+    it('无约束时值直接更新', () => {
+      service.updateAbilityConstrained(character, 'combat', 80);
+      expect(character.state.abilities.combat).toBe(80);
+    });
+
+    it('超过最大值时被截断', () => {
+      service.loadEvolutionConstraints([
+        { id: 'c1', target: 'ability.combat', max: 70 },
+      ]);
+      const violation = service.updateAbilityConstrained(
+        character,
+        'combat',
+        90
+      );
+      expect(character.state.abilities.combat).toBe(70);
+      expect(violation).toBeDefined();
+      expect(violation?.clampedValue).toBe(70);
+    });
+
+    it('低于最小值时被截断', () => {
+      service.loadEvolutionConstraints([
+        { id: 'c2', target: 'ability.combat', min: 30 },
+      ]);
+      const violation = service.updateAbilityConstrained(
+        character,
+        'combat',
+        10
+      );
+      expect(character.state.abilities.combat).toBe(30);
+      expect(violation?.reason).toContain('最小值');
+    });
+
+    it('单次变化超过 maxDelta 时被限制', () => {
+      service.loadEvolutionConstraints([
+        { id: 'c3', target: 'ability.combat', maxDelta: 10 },
+      ]);
+      // 当前 50，期望 80，delta=30 > maxDelta=10
+      const violation = service.updateAbilityConstrained(
+        character,
+        'combat',
+        80
+      );
+      expect(character.state.abilities.combat).toBe(60); // 50 + 10
+      expect(violation).toBeDefined();
+    });
+
+    it('applyConstraint 无约束时返回原值', () => {
+      const result = service.applyConstraint('ability.combat', 50, 80);
+      expect(result.value).toBe(80);
+      expect(result.violation).toBeUndefined();
+    });
+
+    it('getEvolutionConstraints 返回已加载约束', () => {
+      service.loadEvolutionConstraints([
+        { id: 'c1', target: 'ability.combat', max: 100 },
+      ]);
+      expect(service.getEvolutionConstraints()).toHaveLength(1);
+    });
+
+    it('值在约束范围内时无违规', () => {
+      service.loadEvolutionConstraints([
+        { id: 'c1', target: 'ability.combat', min: 0, max: 100, maxDelta: 20 },
+      ]);
+      const violation = service.updateAbilityConstrained(
+        character,
+        'combat',
+        60
+      );
+      expect(character.state.abilities.combat).toBe(60);
+      expect(violation).toBeUndefined();
+    });
+  });
 });

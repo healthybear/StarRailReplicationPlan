@@ -9,6 +9,34 @@ import { createDefaultRelationship } from '@star-rail/types';
 import { BehaviorEngine, TriggerEngine } from './behavior-engine.js';
 
 /**
+ * 演化约束规则（P3-CS-01）
+ * 限制能力/关系维度的变化幅度与合理性
+ */
+export interface EvolutionConstraint {
+  /** 约束 ID */
+  id: string;
+  /** 目标字段（如 ability.combat / relationship.trust） */
+  target: string;
+  /** 最小值 */
+  min?: number;
+  /** 最大值 */
+  max?: number;
+  /** 单次变化最大幅度（绝对值） */
+  maxDelta?: number;
+}
+
+/**
+ * 约束校验结果（P3-CS-01）
+ */
+export interface ConstraintViolation {
+  constraintId: string;
+  target: string;
+  requestedValue: number;
+  clampedValue: number;
+  reason: string;
+}
+
+/**
  * 状态变更记录
  */
 export interface StateChangeRecord {
@@ -45,6 +73,8 @@ export class CharacterStateService {
   private triggerRules: TriggerRule[] = [];
   private stateChangeHistory: Map<string, StateChangeRecord[]> = new Map();
   private listeners: StateChangeListener[] = [];
+  /** 演化约束规则（P3-CS-01） */
+  private evolutionConstraints: EvolutionConstraint[] = [];
 
   constructor(
     private behaviorEngine: BehaviorEngine,
@@ -78,10 +108,105 @@ export class CharacterStateService {
     return [...this.triggerRules];
   }
 
+  // ==================== P3-CS-01 演化约束 ====================
+
   /**
-   * 按事件类型获取触发规则
-   * @param eventType 事件类型
+   * 加载演化约束规则
+   * P3-CS-01: 能力/性格变化上下限与合理性校验
    */
+  loadEvolutionConstraints(constraints: EvolutionConstraint[]): void {
+    this.evolutionConstraints = [...constraints];
+  }
+
+  /**
+   * 获取当前约束规则
+   */
+  getEvolutionConstraints(): EvolutionConstraint[] {
+    return [...this.evolutionConstraints];
+  }
+
+  /**
+   * 校验并修正数值变化（应用约束）
+   * P3-CS-01: 合理性校验
+   * @param target 目标字段（如 ability.combat）
+   * @param currentValue 当前值
+   * @param newValue 期望新值
+   * @returns 修正后的值及违规信息（如有）
+   */
+  applyConstraint(
+    target: string,
+    currentValue: number,
+    newValue: number
+  ): { value: number; violation?: ConstraintViolation } {
+    const constraint = this.evolutionConstraints.find(
+      (c) => c.target === target
+    );
+    if (!constraint) return { value: newValue };
+
+    let clamped = newValue;
+    let reason = '';
+
+    // 上下限约束
+    if (constraint.min !== undefined && clamped < constraint.min) {
+      reason = `低于最小值 ${constraint.min}`;
+      clamped = constraint.min;
+    }
+    if (constraint.max !== undefined && clamped > constraint.max) {
+      reason = `超过最大值 ${constraint.max}`;
+      clamped = constraint.max;
+    }
+
+    // 单次变化幅度约束
+    if (constraint.maxDelta !== undefined) {
+      const delta = Math.abs(newValue - currentValue);
+      if (delta > constraint.maxDelta) {
+        const direction = newValue > currentValue ? 1 : -1;
+        const limited = currentValue + direction * constraint.maxDelta;
+        if (
+          Math.abs(limited - currentValue) < Math.abs(clamped - currentValue)
+        ) {
+          reason = reason
+            ? `${reason}；单次变化超过 ${constraint.maxDelta}`
+            : `单次变化超过 ${constraint.maxDelta}`;
+          clamped = limited;
+        }
+      }
+    }
+
+    if (clamped === newValue) return { value: clamped };
+
+    return {
+      value: clamped,
+      violation: {
+        constraintId: constraint.id,
+        target,
+        requestedValue: newValue,
+        clampedValue: clamped,
+        reason,
+      },
+    };
+  }
+
+  /**
+   * 更新能力值（带约束校验）
+   * P3-CS-01: 覆盖原 updateAbility，加入约束层
+   */
+  updateAbilityConstrained(
+    character: Character,
+    abilityName: string,
+    value: number
+  ): ConstraintViolation | undefined {
+    const currentValue = character.state.abilities[abilityName] ?? 0;
+    const { value: constrained, violation } = this.applyConstraint(
+      `ability.${abilityName}`,
+      currentValue,
+      value
+    );
+    this.updateAbility(character, abilityName, constrained);
+    return violation;
+  }
+
+  // ==================== 关系管理 ====================
   getRulesByEventType(eventType: string): TriggerRule[] {
     return this.triggerRules.filter((rule) => rule.eventType === eventType);
   }

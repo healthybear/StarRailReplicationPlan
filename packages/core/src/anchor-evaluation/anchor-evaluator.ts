@@ -60,6 +60,98 @@ export class AnchorEvaluator {
   /** 评分规则配置（P3-AE-02） */
   private scoringConfig: ScoringConfig | null = null;
 
+  /** 主题配置（P3-AE-01） */
+  private themeDefinitions: Map<string, string[]> = new Map();
+
+  // ==================== P3-AE-01 主题一致性评估 ====================
+
+  /**
+   * 注册主题定义
+   * P3-AE-01: 主题配置与评估维度
+   * @param themeId 主题 ID
+   * @param keywords 主题关键词列表（用于匹配锚点 themes 标签）
+   */
+  defineTheme(themeId: string, keywords: string[]): void {
+    this.themeDefinitions.set(themeId, keywords);
+  }
+
+  /**
+   * 评估主题一致性
+   * P3-AE-01: 主题一致性得分
+   * 比较当前剧情线锚点的主题标签与期望主题的覆盖程度
+   * @param storylineId 剧情线 ID
+   * @param expectedThemes 期望出现的主题 ID 列表
+   * @returns 主题一致性得分 (0-1) 及明细
+   */
+  evaluateThemeConsistency(
+    storylineId: string,
+    expectedThemes: string[]
+  ): {
+    score: number;
+    coveredThemes: string[];
+    missingThemes: string[];
+    details: Array<{
+      themeId: string;
+      covered: boolean;
+      matchedAnchors: string[];
+    }>;
+  } {
+    const anchors = this.getAnchorsByStoryline(storylineId);
+
+    const details: Array<{
+      themeId: string;
+      covered: boolean;
+      matchedAnchors: string[];
+    }> = [];
+    const coveredThemes: string[] = [];
+    const missingThemes: string[] = [];
+
+    for (const themeId of expectedThemes) {
+      const keywords = this.themeDefinitions.get(themeId) ?? [themeId];
+      // 主题覆盖：锚点 themes 中包含任意关键词即视为覆盖
+      const matchedAnchors = anchors
+        .filter((a) => (a.themes ?? []).some((tag) => keywords.includes(tag)))
+        .map((a) => a.id);
+
+      const covered = matchedAnchors.length > 0;
+      details.push({ themeId, covered, matchedAnchors });
+
+      if (covered) {
+        coveredThemes.push(themeId);
+      } else {
+        missingThemes.push(themeId);
+      }
+    }
+
+    // 额外奖励：锚点中出现了期望主题之外的主题标签（丰富度）
+    // 此处仅计算覆盖率，不做额外奖励
+    const score =
+      expectedThemes.length > 0
+        ? coveredThemes.length / expectedThemes.length
+        : 1.0;
+
+    // 如果没有锚点，得分为 0（无法评估）
+    const finalScore =
+      anchors.length === 0 && expectedThemes.length > 0 ? 0 : score;
+
+    return {
+      score: Math.min(1, Math.max(0, finalScore)),
+      coveredThemes,
+      missingThemes,
+      details,
+    };
+  }
+
+  /**
+   * 获取剧情线中出现的所有主题标签
+   * P3-AE-01: 辅助方法
+   */
+  getStorylineThemes(storylineId: string): string[] {
+    const anchors = this.getAnchorsByStoryline(storylineId);
+    const themes = new Set<string>(anchors.flatMap((a) => a.themes ?? []));
+    return Array.from(themes);
+  }
+
   // ==================== P3-AE-02 评分规则配置 ====================
 
   /**

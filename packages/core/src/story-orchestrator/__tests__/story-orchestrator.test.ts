@@ -624,4 +624,127 @@ describe('StoryOrchestrator', () => {
       expect(mockStorage.deleteSession).toHaveBeenCalledWith('test_session');
     });
   });
+
+  // ==================== P3-INF-01 性能与存储上限 ====================
+
+  describe('Performance Config (P3-INF-01)', () => {
+    it('configurePerformance 设置快照上限', () => {
+      orchestrator.configurePerformance(3);
+      expect(orchestrator.getPerformanceConfig().maxSnapshots).toBe(3);
+    });
+
+    it('快照数量超过上限时自动裁剪', () => {
+      orchestrator.configurePerformance(2);
+      const session = createTestSession();
+      const scene = createTestScene();
+
+      // 创建 4 个快照
+      orchestrator.createSnapshot(session, scene);
+      orchestrator.createSnapshot(session, scene);
+      orchestrator.createSnapshot(session, scene);
+      orchestrator.createSnapshot(session, scene);
+
+      expect(orchestrator.getSnapshotCount()).toBe(2);
+    });
+
+    it('上限为 0 时不限制快照数量', () => {
+      orchestrator.configurePerformance(0);
+      const session = createTestSession();
+      const scene = createTestScene();
+
+      for (let i = 0; i < 5; i++) {
+        orchestrator.createSnapshot(session, scene);
+      }
+
+      expect(orchestrator.getSnapshotCount()).toBe(5);
+    });
+
+    it('getPerformanceConfig 返回当前配置', () => {
+      orchestrator.configurePerformance(10, 5000);
+      const config = orchestrator.getPerformanceConfig();
+      expect(config.maxSnapshots).toBe(10);
+      expect(config.responseTimeThresholdMs).toBe(5000);
+    });
+  });
+
+  // ==================== P3-SO-01 死胡同兜底 ====================
+
+  describe('Dead End Detection (P3-SO-01)', () => {
+    it('detectDeadEnd: 响应内容重复时返回 true', () => {
+      const responses = [
+        {
+          characterId: 'march7',
+          content: '我不知道该怎么办',
+          type: 'dialogue' as const,
+        },
+        {
+          characterId: 'march7',
+          content: '我不知道该怎么办',
+          type: 'dialogue' as const,
+        },
+        {
+          characterId: 'march7',
+          content: '我不知道该怎么办',
+          type: 'dialogue' as const,
+        },
+      ];
+      expect(orchestrator.detectDeadEnd(responses)).toBe(true);
+    });
+
+    it('detectDeadEnd: 响应内容不同时返回 false', () => {
+      const responses = [
+        {
+          characterId: 'march7',
+          content: '我不知道该怎么办',
+          type: 'dialogue' as const,
+        },
+        {
+          characterId: 'march7',
+          content: '让我想想',
+          type: 'dialogue' as const,
+        },
+        {
+          characterId: 'march7',
+          content: '好的，我明白了',
+          type: 'dialogue' as const,
+        },
+      ];
+      expect(orchestrator.detectDeadEnd(responses)).toBe(false);
+    });
+
+    it('detectDeadEnd: 响应数量不足阈值时返回 false', () => {
+      const responses = [
+        { characterId: 'march7', content: '重复', type: 'dialogue' as const },
+        { characterId: 'march7', content: '重复', type: 'dialogue' as const },
+      ];
+      expect(orchestrator.detectDeadEnd(responses, 3)).toBe(false);
+    });
+
+    it('rollbackToLastValidSnapshot: 有有效快照时返回最新快照', () => {
+      const session = createTestSession();
+      session.characters['march7'] = createTestCharacter('march7', '三月七');
+      const scene = createTestScene();
+
+      orchestrator.createSnapshot(session, scene);
+      orchestrator.createSnapshot(session, scene);
+
+      const snap = orchestrator.rollbackToLastValidSnapshot();
+      expect(snap).not.toBeNull();
+      expect(snap?.characters.length).toBeGreaterThan(0);
+    });
+
+    it('rollbackToLastValidSnapshot: 无快照时返回 null', () => {
+      orchestrator.clearSnapshotHistory();
+      const snap = orchestrator.rollbackToLastValidSnapshot();
+      expect(snap).toBeNull();
+    });
+
+    it('configureDeadEndFallback 设置兜底消息', () => {
+      orchestrator.configureDeadEndFallback('剧情陷入僵局，请换个方向。');
+      // 验证配置不抛出错误
+      expect(() =>
+        orchestrator.configureDeadEndFallback('新消息')
+      ).not.toThrow();
+    });
+  });
 });
