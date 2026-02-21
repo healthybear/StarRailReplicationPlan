@@ -184,6 +184,45 @@ packages/core/
 
 ---
 
+### packages/web - Web 表现层
+
+基于 Vue 3 + Vuetify 的 Web 管理界面。
+
+```
+packages/web/
+├── src/
+│   ├── views/
+│   │   ├── layout.vue           # 全局布局（侧边导航）
+│   │   ├── HomePage.vue         # 首页仪表板
+│   │   ├── SessionList.vue      # 会话列表
+│   │   ├── CreateSession.vue    # 新建会话
+│   │   ├── StoryAdvance.vue     # 会话推进（对话界面）
+│   │   ├── SceneList.vue        # 场景列表
+│   │   ├── SceneDetail.vue      # 场景详情/编辑
+│   │   ├── CharacterList.vue    # 人物列表
+│   │   ├── CharacterDetail.vue  # 人物详情/编辑
+│   │   ├── FactionList.vue      # 势力列表
+│   │   ├── FactionDetail.vue    # 势力详情/编辑
+│   │   ├── ConfigList.vue       # 配置包管理
+│   │   ├── AnchorList.vue       # 锚点管理
+│   │   └── AnalyticsView.vue    # 分析报告
+│   ├── router/index.ts          # 路由配置
+│   ├── plugins/vuetify.ts       # Vuetify 配置
+│   └── main.ts                  # 应用入口
+├── package.json
+└── vite.config.ts
+```
+
+**启动 Web UI**：
+
+```bash
+cd packages/web
+pnpm dev   # 开发模式，默认 http://localhost:5173
+pnpm build # 生产构建
+```
+
+---
+
 ### packages/cli - CLI 表现层
 
 命令行交互界面，提供用户与系统交互的入口。
@@ -365,6 +404,24 @@ ANTHROPIC_API_KEY=sk-ant-xxxxx
 # 应用配置
 NODE_ENV=development
 LOG_LEVEL=info
+```
+
+---
+
+## 测试状态
+
+| 包                          | 测试用例 | 通过率 | 分支覆盖率 |
+| --------------------------- | -------- | ------ | ---------- |
+| `@star-rail/core`           | 227      | 100%   | 82.75% ✅  |
+| `@star-rail/infrastructure` | 92       | 100%   | 90% ✅     |
+
+```bash
+# 运行所有测试
+pnpm test
+
+# 运行并查看覆盖率
+pnpm --filter @star-rail/core test --coverage
+pnpm --filter @star-rail/infrastructure test --coverage
 ```
 
 ---
