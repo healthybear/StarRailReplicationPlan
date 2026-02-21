@@ -134,6 +134,10 @@ export {
   CharacterConfigSchema,
   InformationAttributionRuleSchema,
   InformationAttributionConfigSchema,
+  InferenceRuleSchema,
+  ForgetRuleSchema,
+  FuzzyRuleSchema,
+  InformationRulesConfigSchema,
 } from './config.js';
 export type {
   LLMProviderConfig,
@@ -145,4 +149,8 @@ export type {
   CharacterConfig,
   InformationAttributionRule,
   InformationAttributionConfig,
+  InferenceRule,
+  ForgetRule,
+  FuzzyRule,
+  InformationRulesConfig,
 } from './config.js';

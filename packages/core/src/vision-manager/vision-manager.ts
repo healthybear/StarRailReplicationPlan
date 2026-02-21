@@ -7,6 +7,10 @@ import type {
   InformationAttributionConfig,
   EventRecord,
   KnownInformationRef,
+  InferenceRule,
+  ForgetRule,
+  FuzzyRule,
+  InformationRulesConfig,
 } from '@star-rail/types';
 import { generateInformationId } from '@star-rail/types';
 import type { StorageAdapter } from '@star-rail/infrastructure';
@@ -49,6 +53,9 @@ export interface AttributionResult {
 @injectable()
 export class VisionManager {
   private attributionRules: InformationAttributionRule[] = [];
+  private inferenceRules: InferenceRule[] = [];
+  private forgetRules: ForgetRule[] = [];
+  private fuzzyRules: FuzzyRule[] = [];
 
   constructor(@inject('StorageAdapter') private storage: StorageAdapter) {}
 
@@ -519,5 +526,173 @@ export class VisionManager {
         sharedIds.includes(info.id)
       ),
     };
+  }
+
+  /**
+   * 加载信息规则配置（推理/遗忘/模糊）
+   */
+  loadInformationRules(config: InformationRulesConfig): void {
+    this.inferenceRules = [...(config.inferenceRules ?? [])].sort(
+      (a, b) => (b.priority ?? 0) - (a.priority ?? 0)
+    );
+    this.forgetRules = [...(config.forgetRules ?? [])];
+    this.fuzzyRules = [...(config.fuzzyRules ?? [])];
+  }
+
+  /**
+   * 应用推理规则
+   * 对指定角色检查前提标签，满足时自动添加推理信息
+   * @returns 新增的推理信息列表
+   */
+  applyInference(
+    informationStore: InformationStore,
+    characterId: string,
+    sceneId: string,
+    now = Date.now()
+  ): Information[] {
+    if (this.inferenceRules.length === 0) return [];
+
+    const knownIds = new Set(informationStore.byCharacter[characterId] ?? []);
+    const knownInfos = informationStore.global.filter((i) =>
+      knownIds.has(i.id)
+    );
+    const knownTags = new Set(knownInfos.flatMap((i) => i.tags ?? []));
+
+    const added: Information[] = [];
+
+    for (const rule of this.inferenceRules) {
+      // 检查前提标签是否全部满足
+      if (!rule.premiseTags.every((tag) => knownTags.has(tag))) continue;
+
+      // 避免重复推理（内容相同的信息已存在）
+      const alreadyExists = informationStore.global.some(
+        (i) =>
+          i.content === rule.conclusionTemplate &&
+          i.source === 'inferred' &&
+          knownIds.has(i.id)
+      );
+      if (alreadyExists) continue;
+
+      const info = this.addGlobalInformation(informationStore, {
+        content: rule.conclusionTemplate,
+        source: 'inferred' as const,
+        timestamp: now,
+        sceneId,
+        tags: ['inferred', ...rule.premiseTags],
+      });
+      this.assignInformationToCharacter(informationStore, characterId, info.id);
+      added.push(info);
+    }
+
+    return added;
+  }
+
+  /**
+   * 应用遗忘规则
+   * 从角色的已知信息中移除满足遗忘条件的信息
+   * @returns 被遗忘的信息 ID 列表
+   */
+  applyForgetting(
+    informationStore: InformationStore,
+    characterId: string,
+    now = Date.now()
+  ): string[] {
+    if (this.forgetRules.length === 0) return [];
+
+    const knownIds = informationStore.byCharacter[characterId];
+    if (!knownIds || knownIds.length === 0) return [];
+
+    const forgotten: string[] = [];
+
+    for (const rule of this.forgetRules) {
+      const preserveKey = rule.preserveKeyMemory !== false;
+
+      const toForget = knownIds.filter((id) => {
+        const info = informationStore.global.find((i) => i.id === id);
+        if (!info) return false;
+        if (preserveKey && info.isKeyMemory) return false;
+
+        const ageMs = now - info.timestamp;
+
+        // 按时间遗忘
+        if (rule.maxAgeMs !== undefined && rule.maxAgeMs > 0) {
+          if (ageMs < rule.maxAgeMs) return false;
+        }
+
+        // 按标签遗忘
+        if (rule.targetTags && rule.targetTags.length > 0) {
+          const infoTags = info.tags ?? [];
+          if (!rule.targetTags.some((t) => infoTags.includes(t))) return false;
+        }
+
+        return true;
+      });
+
+      forgotten.push(...toForget);
+    }
+
+    // 去重并从角色已知列表中移除
+    const uniqueForgotten = [...new Set(forgotten)];
+    informationStore.byCharacter[characterId] = knownIds.filter(
+      (id) => !uniqueForgotten.includes(id)
+    );
+
+    return uniqueForgotten;
+  }
+
+  /**
+   * 应用模糊规则
+   * 更新角色已知信息引用的置信度（降低）
+   * 注意：置信度存储在 KnownInformationRef 中，此方法返回需要更新的引用列表
+   * @returns 更新后的 KnownInformationRef 列表（仅包含被模糊的条目）
+   */
+  applyFuzzy(
+    informationStore: InformationStore,
+    characterId: string,
+    currentRefs: KnownInformationRef[],
+    now = Date.now()
+  ): KnownInformationRef[] {
+    if (this.fuzzyRules.length === 0) return [];
+
+    const knownIds = new Set(informationStore.byCharacter[characterId] ?? []);
+    const updated: KnownInformationRef[] = [];
+
+    for (const ref of currentRefs) {
+      if (!knownIds.has(ref.informationId)) continue;
+
+      const info = informationStore.global.find(
+        (i) => i.id === ref.informationId
+      );
+      if (!info) continue;
+
+      let confidence = ref.confidence ?? 1.0;
+      let changed = false;
+
+      for (const rule of this.fuzzyRules) {
+        // 检查来源类型
+        if (rule.sourceTypes && !rule.sourceTypes.includes(info.source))
+          continue;
+
+        // 检查标签
+        if (rule.targetTags && rule.targetTags.length > 0) {
+          const infoTags = info.tags ?? [];
+          if (!rule.targetTags.some((t) => infoTags.includes(t))) continue;
+        }
+
+        // 检查年龄
+        if (rule.afterAgeMs !== undefined) {
+          if (now - info.timestamp < rule.afterAgeMs) continue;
+        }
+
+        confidence = Math.max(0, confidence * rule.decayFactor);
+        changed = true;
+      }
+
+      if (changed) {
+        updated.push({ ...ref, confidence });
+      }
+    }
+
+    return updated;
   }
 }

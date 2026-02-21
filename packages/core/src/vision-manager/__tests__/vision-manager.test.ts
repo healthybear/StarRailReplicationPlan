@@ -549,3 +549,268 @@ describe('VisionManager', () => {
     });
   });
 });
+
+// ─── P2-VM-01 推理/遗忘/模糊规则测试 ───────────────────────────────────────
+
+describe('VisionManager - P2-VM-01 信息规则', () => {
+  let vm: VisionManager;
+  let store: InformationStore;
+  const NOW = 1_000_000;
+
+  beforeEach(() => {
+    vm = new VisionManager(mockStorage as any);
+    store = createEmptyInformationStore();
+  });
+
+  // ── 推理规则 ──────────────────────────────────────────────────────────────
+
+  describe('applyInference', () => {
+    it('前提标签全部满足时推理出新信息', () => {
+      vm.loadInformationRules({
+        version: '1.0',
+        inferenceRules: [
+          {
+            id: 'r1',
+            name: '推理规则1',
+            premiseTags: ['secret', 'location'],
+            conclusionTemplate: '推理：目标在秘密地点',
+            confidence: 0.7,
+          },
+        ],
+      });
+
+      // 给角色添加含前提标签的信息
+      const i1 = vm.addGlobalInformation(store, {
+        content: '这是秘密',
+        source: 'told',
+        timestamp: NOW - 100,
+        sceneId: 's1',
+        tags: ['secret'],
+      });
+      const i2 = vm.addGlobalInformation(store, {
+        content: '地点已知',
+        source: 'witnessed',
+        timestamp: NOW - 100,
+        sceneId: 's1',
+        tags: ['location'],
+      });
+      vm.assignInformationToCharacter(store, 'char-a', i1.id);
+      vm.assignInformationToCharacter(store, 'char-a', i2.id);
+
+      const added = vm.applyInference(store, 'char-a', 's1', NOW);
+      expect(added).toHaveLength(1);
+      expect(added[0].content).toBe('推理：目标在秘密地点');
+      expect(added[0].source).toBe('inferred');
+      // 推理信息已归属给角色
+      expect(vm.characterKnowsInformation(store, 'char-a', added[0].id)).toBe(
+        true
+      );
+    });
+
+    it('前提标签不满足时不推理', () => {
+      vm.loadInformationRules({
+        version: '1.0',
+        inferenceRules: [
+          {
+            id: 'r1',
+            name: '规则',
+            premiseTags: ['secret', 'location'],
+            conclusionTemplate: '推理结论',
+          },
+        ],
+      });
+
+      const i1 = vm.addGlobalInformation(store, {
+        content: '只有一个标签',
+        source: 'told',
+        timestamp: NOW,
+        sceneId: 's1',
+        tags: ['secret'],
+      });
+      vm.assignInformationToCharacter(store, 'char-a', i1.id);
+
+      const added = vm.applyInference(store, 'char-a', 's1', NOW);
+      expect(added).toHaveLength(0);
+    });
+
+    it('重复推理不产生重复信息', () => {
+      vm.loadInformationRules({
+        version: '1.0',
+        inferenceRules: [
+          {
+            id: 'r1',
+            name: '规则',
+            premiseTags: ['tag-a'],
+            conclusionTemplate: '推理结论',
+          },
+        ],
+      });
+
+      const i1 = vm.addGlobalInformation(store, {
+        content: '前提',
+        source: 'witnessed',
+        timestamp: NOW,
+        sceneId: 's1',
+        tags: ['tag-a'],
+      });
+      vm.assignInformationToCharacter(store, 'char-a', i1.id);
+
+      vm.applyInference(store, 'char-a', 's1', NOW);
+      const second = vm.applyInference(store, 'char-a', 's1', NOW);
+      expect(second).toHaveLength(0);
+    });
+  });
+
+  // ── 遗忘规则 ──────────────────────────────────────────────────────────────
+
+  describe('applyForgetting', () => {
+    it('超过 maxAgeMs 的信息被遗忘', () => {
+      vm.loadInformationRules({
+        version: '1.0',
+        forgetRules: [{ id: 'f1', name: '时间遗忘', maxAgeMs: 5000 }],
+      });
+
+      const old = vm.addGlobalInformation(store, {
+        content: '旧信息',
+        source: 'heard',
+        timestamp: NOW - 10000,
+        sceneId: 's1',
+      });
+      const fresh = vm.addGlobalInformation(store, {
+        content: '新信息',
+        source: 'heard',
+        timestamp: NOW - 1000,
+        sceneId: 's1',
+      });
+      vm.assignInformationToCharacter(store, 'char-a', old.id);
+      vm.assignInformationToCharacter(store, 'char-a', fresh.id);
+
+      const forgotten = vm.applyForgetting(store, 'char-a', NOW);
+      expect(forgotten).toContain(old.id);
+      expect(forgotten).not.toContain(fresh.id);
+      expect(vm.characterKnowsInformation(store, 'char-a', old.id)).toBe(false);
+      expect(vm.characterKnowsInformation(store, 'char-a', fresh.id)).toBe(
+        true
+      );
+    });
+
+    it('关键记忆不被遗忘（preserveKeyMemory 默认 true）', () => {
+      vm.loadInformationRules({
+        version: '1.0',
+        forgetRules: [{ id: 'f1', name: '时间遗忘', maxAgeMs: 1000 }],
+      });
+
+      const key = vm.addGlobalInformation(store, {
+        content: '关键记忆',
+        source: 'witnessed',
+        timestamp: NOW - 9999,
+        sceneId: 's1',
+        isKeyMemory: true,
+      });
+      vm.assignInformationToCharacter(store, 'char-a', key.id);
+
+      const forgotten = vm.applyForgetting(store, 'char-a', NOW);
+      expect(forgotten).not.toContain(key.id);
+    });
+
+    it('按标签遗忘', () => {
+      vm.loadInformationRules({
+        version: '1.0',
+        forgetRules: [{ id: 'f1', name: '标签遗忘', targetTags: ['rumor'] }],
+      });
+
+      const rumor = vm.addGlobalInformation(store, {
+        content: '谣言',
+        source: 'heard',
+        timestamp: NOW,
+        sceneId: 's1',
+        tags: ['rumor'],
+      });
+      const fact = vm.addGlobalInformation(store, {
+        content: '事实',
+        source: 'witnessed',
+        timestamp: NOW,
+        sceneId: 's1',
+        tags: ['fact'],
+      });
+      vm.assignInformationToCharacter(store, 'char-a', rumor.id);
+      vm.assignInformationToCharacter(store, 'char-a', fact.id);
+
+      const forgotten = vm.applyForgetting(store, 'char-a', NOW);
+      expect(forgotten).toContain(rumor.id);
+      expect(forgotten).not.toContain(fact.id);
+    });
+  });
+
+  // ── 模糊规则 ──────────────────────────────────────────────────────────────
+
+  describe('applyFuzzy', () => {
+    it('按来源类型降低置信度', () => {
+      vm.loadInformationRules({
+        version: '1.0',
+        fuzzyRules: [
+          {
+            id: 'fz1',
+            name: '听闻模糊',
+            sourceTypes: ['heard'],
+            decayFactor: 0.5,
+          },
+        ],
+      });
+
+      const heard = vm.addGlobalInformation(store, {
+        content: '听说的',
+        source: 'heard',
+        timestamp: NOW,
+        sceneId: 's1',
+      });
+      const witnessed = vm.addGlobalInformation(store, {
+        content: '亲眼看到的',
+        source: 'witnessed',
+        timestamp: NOW,
+        sceneId: 's1',
+      });
+      vm.assignInformationToCharacter(store, 'char-a', heard.id);
+      vm.assignInformationToCharacter(store, 'char-a', witnessed.id);
+
+      const refs = [
+        { informationId: heard.id, acquiredAt: NOW, confidence: 0.9 },
+        { informationId: witnessed.id, acquiredAt: NOW, confidence: 1.0 },
+      ];
+
+      const updated = vm.applyFuzzy(store, 'char-a', refs, NOW);
+      expect(updated).toHaveLength(1);
+      expect(updated[0].informationId).toBe(heard.id);
+      expect(updated[0].confidence).toBeCloseTo(0.45);
+    });
+
+    it('afterAgeMs 未到时不模糊', () => {
+      vm.loadInformationRules({
+        version: '1.0',
+        fuzzyRules: [
+          {
+            id: 'fz1',
+            name: '时间模糊',
+            sourceTypes: ['told'],
+            decayFactor: 0.5,
+            afterAgeMs: 10000,
+          },
+        ],
+      });
+
+      const told = vm.addGlobalInformation(store, {
+        content: '刚被告知',
+        source: 'told',
+        timestamp: NOW - 1000, // 只过了 1 秒
+        sceneId: 's1',
+      });
+      vm.assignInformationToCharacter(store, 'char-a', told.id);
+
+      const refs = [
+        { informationId: told.id, acquiredAt: NOW, confidence: 0.95 },
+      ];
+      const updated = vm.applyFuzzy(store, 'char-a', refs, NOW);
+      expect(updated).toHaveLength(0);
+    });
+  });
+});

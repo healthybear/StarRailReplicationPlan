@@ -201,3 +201,73 @@ export const InformationAttributionConfigSchema = z.object({
 export type InformationAttributionConfig = z.infer<
   typeof InformationAttributionConfigSchema
 >;
+
+/**
+ * 信息推理规则 Schema
+ * 当角色已知某些前提信息时，自动推理出新信息
+ */
+export const InferenceRuleSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  /** 前提信息标签（角色需同时拥有含这些标签的信息） */
+  premiseTags: z.array(z.string()),
+  /** 推理出的信息内容模板 */
+  conclusionTemplate: z.string(),
+  /** 推理置信度（默认 0.7） */
+  confidence: z.number().min(0).max(1).optional(),
+  priority: z.number().optional(),
+});
+
+export type InferenceRule = z.infer<typeof InferenceRuleSchema>;
+
+/**
+ * 遗忘规则 Schema
+ * 满足条件时，角色遗忘（移除）某些信息
+ */
+export const ForgetRuleSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  /** 信息超过多少毫秒则遗忘（0 或未设置表示不按时间） */
+  maxAgeMs: z.number().nonnegative().optional(),
+  /** 信息标签匹配时遗忘 */
+  targetTags: z.array(z.string()).optional(),
+  /** 是否保留关键记忆（isKeyMemory=true 的信息不遗忘，默认 true） */
+  preserveKeyMemory: z.boolean().optional(),
+});
+
+export type ForgetRule = z.infer<typeof ForgetRuleSchema>;
+
+/**
+ * 模糊规则 Schema
+ * 满足条件时，降低角色对某些信息的置信度
+ */
+export const FuzzyRuleSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  /** 触发条件：信息来源类型 */
+  sourceTypes: z
+    .array(z.enum(['witnessed', 'heard', 'told', 'inferred']))
+    .optional(),
+  /** 触发条件：信息标签 */
+  targetTags: z.array(z.string()).optional(),
+  /** 置信度衰减系数（0-1，乘以当前置信度） */
+  decayFactor: z.number().min(0).max(1),
+  /** 信息超过多少毫秒后开始模糊 */
+  afterAgeMs: z.number().nonnegative().optional(),
+});
+
+export type FuzzyRule = z.infer<typeof FuzzyRuleSchema>;
+
+/**
+ * 信息规则配置 Schema（推理 + 遗忘 + 模糊）
+ */
+export const InformationRulesConfigSchema = z.object({
+  version: z.string(),
+  inferenceRules: z.array(InferenceRuleSchema).optional(),
+  forgetRules: z.array(ForgetRuleSchema).optional(),
+  fuzzyRules: z.array(FuzzyRuleSchema).optional(),
+});
+
+export type InformationRulesConfig = z.infer<
+  typeof InformationRulesConfigSchema
+>;
