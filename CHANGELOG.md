@@ -4,6 +4,65 @@
 
 ---
 
+## [2.0.0-dev] - 2026-02-21
+
+### Phase 2 功能扩展
+
+#### 新增
+
+**P2-CS-01 多角色状态与势力/关系扩展**
+
+- `FactionService`：势力注册/查询，势力间关系管理
+- `CharacterStateService` 扩展：批量角色关系更新，关系网络查询
+- 触发表支持势力事件规则
+
+**P2-WE-01 道具与剧情节点/分支**
+
+- `ItemService`：道具定义注册，给予/移除/转移道具实例
+- `PlotService`：剧情图加载，分支推进，终止节点检测
+
+**P2-SO-01 快照保存与加载**
+
+- `StoryOrchestrator` 扩展：`createSnapshot` / `loadSnapshot`
+- 快照包含完整会话状态（角色、世界状态、信息库）
+
+**P2-CA-01 多 Agent 冲突裁决**
+
+- 新增 `ConflictArbitrator`，支持四种裁决策略：priority / compromise / first_wins / random
+- `resolveAll` 保证无死锁
+
+**P2-EI-01 导入冲突策略可配置**
+
+- `ConflictStrategy` 新增 `merge` 选项（能力取最大值、关系取平均值、已知信息取并集）
+- 新增 `importSnapshotToSession`、`exportSnapshot`、`importSnapshot` 方法
+
+**P2-AE-01 判断维度对比报告**
+
+- `AnchorEvaluator.compare` 新增 `judgment` 维度，`CompareOptions.includeJudgment` 可选开关
+
+**P2-UI-01 多角色/快照/读档 UI**
+
+- 新增 `SnapshotList.vue`、`MultiCharacterView.vue`、`ComparisonReport.vue`
+- `StoryAdvance.vue` 工具栏新增「多角色」「对比报告」「加载快照」导航
+
+**P2-VM-01 信息推理/遗忘/模糊规则**
+
+- 新增类型：`InferenceRule`、`ForgetRule`、`FuzzyRule`、`InformationRulesConfig`
+- `VisionManager` 新增：`loadInformationRules`、`applyInference`、`applyForgetting`、`applyFuzzy`
+
+#### 测试
+
+- `@star-rail/core`：285 个测试，100% 通过（+58 个）
+- `@star-rail/infrastructure`：92 个测试，100% 通过
+- `@star-rail/api`：3 个测试，100% 通过（修复 NestJS DI 配置）
+- 总计：380 个测试，0 失败
+
+#### 文档
+
+- 新增 `docs/modules/DEV-P2-Phase2功能扩展.md`
+
+---
+
 ## [1.0.0-rc.1] - 2026-02-21
 
 ### Phase 1 MVP 发布候选版本
