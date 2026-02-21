@@ -125,6 +125,14 @@ const handleLoadSnapshot = () => {
             对比报告
           </v-btn>
           <v-btn
+            variant="text"
+            color="default"
+            prepend-icon="mdi-chart-bubble"
+            @click="router.push({ name: 'StateVisualization', params: { sessionId: sessionId } })"
+          >
+            状态可视化
+          </v-btn>
+          <v-btn
             variant="tonal"
             color="default"
             prepend-icon="mdi-history"

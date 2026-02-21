@@ -41,6 +41,11 @@ const routes = [
         component: () => import('@/views/ComparisonReport.vue'),
       },
       {
+        path: 'session/:sessionId/visualization',
+        name: 'StateVisualization',
+        component: () => import('@/views/StateVisualization.vue'),
+      },
+      {
         path: 'scenes',
         name: 'SceneList',
         component: () => import('@/views/SceneList.vue'),
