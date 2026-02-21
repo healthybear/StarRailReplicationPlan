@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --filter @star-rail/core test -- --testPathPattern=\"vision-manager\")",
+      "Bash(npx jest --testPathPattern=\"vision-manager\")",
+      "Bash(pnpm --filter @star-rail/core test -- --testPathPattern=\"anchor-evaluator|export-import\" --run)",
+      "Bash(pnpm --filter @star-rail/core test -- --testPathPattern=\"anchor-evaluator\" --run)",
+      "Bash(pnpm --filter @star-rail/core test -- --testPathPattern=\"anchor-evaluator\")",
+      "Bash(npx jest anchor-evaluator)",
+      "Bash(npx jest anchor-evaluator character-state story-orchestrator)",
+      "Bash(cat:*)",
+      "Bash(pnpm --filter @star-rail/web build:*)",
+      "Bash(git stash:*)"
+    ]
+  }
+}
