@@ -55,6 +55,21 @@ const routes = [
         name: 'FactionDetail',
         component: () => import('@/views/FactionDetail.vue'),
       },
+      {
+        path: 'configs',
+        name: 'ConfigList',
+        component: () => import('@/views/ConfigList.vue'),
+      },
+      {
+        path: 'anchors',
+        name: 'AnchorList',
+        component: () => import('@/views/AnchorList.vue'),
+      },
+      {
+        path: 'analytics',
+        name: 'Analytics',
+        component: () => import('@/views/AnalyticsView.vue'),
+      },
     ],
   },
 ];
