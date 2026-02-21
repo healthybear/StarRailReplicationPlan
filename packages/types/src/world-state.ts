@@ -125,6 +125,19 @@ export const WorldStateSchema = z.object({
   eventChain: z.array(EventRecordSchema),
   /** 当前情节节点 ID */
   currentPlotNodeId: z.string().optional(),
+  /** 当前可用剧情分支 ID 列表（Phase 2） */
+  availableBranchIds: z.array(z.string()).optional(),
+  /** 世界道具实例（key 为实例 ID，Phase 2） */
+  worldItems: z
+    .record(
+      z.object({
+        itemId: z.string(),
+        quantity: z.number().int().min(1),
+        ownerId: z.string().optional(),
+        acquiredAt: z.number(),
+      })
+    )
+    .optional(),
 });
 
 export type WorldState = z.infer<typeof WorldStateSchema>;

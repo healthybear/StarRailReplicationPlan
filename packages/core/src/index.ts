@@ -23,7 +23,10 @@ export type {
 } from './character-state/index.js';
 
 // World Engine
-export { WorldEngine } from './world-engine/index.js';
+export { WorldEngine, ItemService, PlotService } from './world-engine/index.js';
+
+// Faction
+export { FactionService } from './faction/index.js';
 
 // Input Parser
 export {
@@ -54,7 +57,10 @@ export type {
 } from './character-agent/index.js';
 
 // Story Orchestrator
-export { StoryOrchestrator } from './story-orchestrator/index.js';
+export {
+  StoryOrchestrator,
+  SnapshotService,
+} from './story-orchestrator/index.js';
 export type {
   AdvanceResult,
   StateSnapshot,

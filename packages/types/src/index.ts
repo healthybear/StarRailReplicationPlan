@@ -87,6 +87,42 @@ export type {
   ComparisonResult,
 } from './anchor.js';
 
+// Faction types
+export {
+  FactionRelationshipSchema,
+  FactionSchema,
+  FactionConfigSchema,
+  createDefaultFactionRelationship,
+} from './faction.js';
+export type { FactionRelationship, Faction, FactionConfig } from './faction.js';
+
+// Plot types
+export {
+  PlotOutcomeTypeEnum,
+  PlotOutcomeSchema,
+  PlotBranchSchema,
+  PlotNodeSchema,
+  PlotGraphConfigSchema,
+} from './plot.js';
+export type {
+  PlotOutcomeType,
+  PlotOutcome,
+  PlotBranch,
+  PlotNode,
+  PlotGraphConfig,
+} from './plot.js';
+
+// Item types
+export {
+  ItemTypeEnum,
+  ItemSchema,
+  ItemInstanceSchema,
+  ItemStoreSchema,
+  createEmptyItemStore,
+  generateItemInstanceId,
+} from './item.js';
+export type { ItemType, Item, ItemInstance, ItemStore } from './item.js';
+
 // Config types
 export {
   LLMProviderConfigSchema,

@@ -10,10 +10,14 @@ import {
 import { VisionManager } from './vision-manager/vision-manager.js';
 import { CharacterStateService } from './character-state/character-state.service.js';
 import { WorldEngine } from './world-engine/world-engine.js';
+import { ItemService } from './world-engine/item.service.js';
+import { PlotService } from './world-engine/plot.service.js';
+import { FactionService } from './faction/faction.service.js';
 import { InputParser } from './input-parser/input-parser.js';
 import { CharacterAgent } from './character-agent/character-agent.js';
 import { PromptBuilder } from './character-agent/prompt-builder.js';
 import { StoryOrchestrator } from './story-orchestrator/story-orchestrator.js';
+import { SnapshotService } from './story-orchestrator/snapshot.service.js';
 
 /**
  * 简化的 LLM 配置（用于快速初始化）
@@ -89,10 +93,14 @@ export function initializeContainer(options: {
   container.registerSingleton(VisionManager);
   container.registerSingleton(CharacterStateService);
   container.registerSingleton(WorldEngine);
+  container.registerSingleton(FactionService);
+  container.registerSingleton(ItemService);
+  container.registerSingleton(PlotService);
   container.registerSingleton(InputParser);
   container.registerSingleton(PromptBuilder); // CharacterAgent 的依赖
   container.registerSingleton(CharacterAgent);
   container.registerSingleton(StoryOrchestrator);
+  container.registerSingleton(SnapshotService);
 }
 
 /**
