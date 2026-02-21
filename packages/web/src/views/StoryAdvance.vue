@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
+const router = useRouter();
 const sessionId = computed(() => route.params.sessionId as string);
 
 // 会话信息
@@ -80,11 +81,12 @@ const sendMessage = async () => {
 
 // 快捷操作
 const handleSnapshot = () => {
+  // TODO: 调用后端 API 创建快照
   console.log('创建快照');
 };
 
 const handleLoadSnapshot = () => {
-  console.log('加载快照');
+  router.push({ name: 'SnapshotList', params: { sessionId: sessionId.value } });
 };
 </script>
 
@@ -106,6 +108,22 @@ const handleLoadSnapshot = () => {
 
       <template #append>
         <div class="flex gap-2 mr-4">
+          <v-btn
+            variant="text"
+            color="default"
+            prepend-icon="mdi-account-group"
+            @click="router.push({ name: 'MultiCharacterView', params: { sessionId: sessionId } })"
+          >
+            多角色
+          </v-btn>
+          <v-btn
+            variant="text"
+            color="default"
+            prepend-icon="mdi-compare"
+            @click="router.push({ name: 'ComparisonReport', params: { sessionId: sessionId } })"
+          >
+            对比报告
+          </v-btn>
           <v-btn
             variant="tonal"
             color="default"

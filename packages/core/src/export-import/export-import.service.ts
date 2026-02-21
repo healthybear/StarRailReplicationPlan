@@ -1,11 +1,17 @@
 import { injectable } from 'tsyringe';
 import fs from 'fs-extra';
 import path from 'path';
-import type { Character, SceneConfig, SessionState } from '@star-rail/types';
+import type {
+  Character,
+  SceneConfig,
+  SessionState,
+  Snapshot,
+} from '@star-rail/types';
 import {
   CharacterSchema as CharSchema,
   SceneConfigSchema as SceneSchema,
   SessionStateSchema,
+  SnapshotSchema,
 } from '@star-rail/types';
 
 /**
@@ -16,8 +22,14 @@ export type ExportType = 'character' | 'scene' | 'session';
 /**
  * 冲突策略
  * P1-EI-02: 导入时冲突检查策略
+ * P2-EI-01: 新增 merge 策略（合并状态字段）
+ *
+ * - reject: 存在冲突时拒绝导入（默认）
+ * - overwrite: 覆盖已有数据
+ * - rename: 生成新 ID 后导入
+ * - merge: 合并状态字段（角色能力值取较大值，关系取平均值）
  */
-export type ConflictStrategy = 'reject' | 'overwrite' | 'rename';
+export type ConflictStrategy = 'reject' | 'overwrite' | 'rename' | 'merge';
 
 /**
  * 导出包元数据
@@ -231,6 +243,16 @@ export class ExportImportService {
             data: character,
             conflicts,
             newId,
+            missingDependencies:
+              missingDependencies.length > 0 ? missingDependencies : undefined,
+          };
+        } else if (strategy === 'merge') {
+          // merge: 合并状态字段（能力值取较大值，关系取平均值）
+          // 调用方需自行传入 existingCharacter 进行合并，此处仅标记冲突并返回数据
+          return {
+            success: true,
+            data: character,
+            conflicts,
             missingDependencies:
               missingDependencies.length > 0 ? missingDependencies : undefined,
           };
@@ -695,6 +717,172 @@ export class ExportImportService {
       if (await fs.pathExists(this.exportDir)) {
         await fs.emptyDir(this.exportDir);
       }
+    }
+  }
+
+  // ==================== P2-EI-01 扩展 ====================
+
+  /**
+   * 合并角色状态（merge 策略）
+   * 能力值取较大值，关系各维度取平均值
+   * P2-EI-01: 角色状态快照导入到另一剧情时的合并逻辑
+   * @param base 目标角色（被合并到）
+   * @param incoming 导入的角色（来源）
+   * @returns 合并后的角色（不修改原对象）
+   */
+  mergeCharacterState(base: Character, incoming: Character): Character {
+    const merged: Character = JSON.parse(JSON.stringify(base));
+
+    // 合并能力值：取较大值
+    for (const [key, value] of Object.entries(incoming.state.abilities)) {
+      const baseValue = merged.state.abilities[key] ?? 0;
+      merged.state.abilities[key] = Math.max(baseValue, value);
+    }
+
+    // 合并关系：各维度取平均值
+    for (const [targetId, incomingRel] of Object.entries(
+      incoming.state.relationships
+    )) {
+      const baseRel = merged.state.relationships[targetId];
+      if (baseRel) {
+        merged.state.relationships[targetId] = {
+          trust: (baseRel.trust + incomingRel.trust) / 2,
+          hostility: (baseRel.hostility + incomingRel.hostility) / 2,
+          intimacy: (baseRel.intimacy + incomingRel.intimacy) / 2,
+          respect: (baseRel.respect + incomingRel.respect) / 2,
+        };
+      } else {
+        merged.state.relationships[targetId] = { ...incomingRel };
+      }
+    }
+
+    // 合并已知信息：取并集
+    const knownIds = new Set(
+      merged.state.knownInformation.map((k) => k.informationId)
+    );
+    for (const ref of incoming.state.knownInformation) {
+      if (!knownIds.has(ref.informationId)) {
+        merged.state.knownInformation.push({ ...ref });
+        knownIds.add(ref.informationId);
+      }
+    }
+
+    return merged;
+  }
+
+  /**
+   * 将快照中的角色状态导入到目标会话
+   * P2-EI-01: 角色状态快照导入到另一剧情（验收标准③）
+   * @param snapshot 快照数据
+   * @param targetSession 目标会话
+   * @param strategy 冲突策略
+   * @returns 导入结果（成功导入的角色 ID 列表）
+   */
+  importSnapshotToSession(
+    snapshot: Snapshot,
+    targetSession: SessionState,
+    strategy: ConflictStrategy = 'reject'
+  ): {
+    success: boolean;
+    importedCharacterIds: string[];
+    skippedCharacterIds: string[];
+    error?: string;
+  } {
+    const importedCharacterIds: string[] = [];
+    const skippedCharacterIds: string[] = [];
+
+    for (const [charId, snapshotChar] of Object.entries(
+      snapshot.state.characters
+    )) {
+      const existing = targetSession.characters[charId];
+
+      if (!existing) {
+        // 角色不存在，直接导入
+        targetSession.characters[charId] = JSON.parse(
+          JSON.stringify(snapshotChar)
+        );
+        importedCharacterIds.push(charId);
+        continue;
+      }
+
+      // 角色已存在，按策略处理
+      switch (strategy) {
+        case 'reject':
+          skippedCharacterIds.push(charId);
+          break;
+        case 'overwrite':
+          targetSession.characters[charId] = JSON.parse(
+            JSON.stringify(snapshotChar)
+          );
+          importedCharacterIds.push(charId);
+          break;
+        case 'rename': {
+          const newId = `${charId}_snap_${Date.now()}`;
+          const renamed = JSON.parse(JSON.stringify(snapshotChar));
+          renamed.id = newId;
+          targetSession.characters[newId] = renamed;
+          importedCharacterIds.push(newId);
+          break;
+        }
+        case 'merge': {
+          targetSession.characters[charId] = this.mergeCharacterState(
+            existing,
+            snapshotChar
+          );
+          importedCharacterIds.push(charId);
+          break;
+        }
+      }
+    }
+
+    return {
+      success: true,
+      importedCharacterIds,
+      skippedCharacterIds,
+    };
+  }
+
+  /**
+   * 导出快照到文件
+   * P2-EI-01: 快照序列化
+   * @param snapshot 快照数据
+   * @param options 导出选项
+   */
+  async exportSnapshot(
+    snapshot: Snapshot,
+    options?: { filename?: string; description?: string }
+  ): Promise<string> {
+    const filePath = path.join(
+      this.exportDir,
+      'snapshots',
+      options?.filename || `${snapshot.id}.json`
+    );
+    await fs.ensureDir(path.dirname(filePath));
+    await fs.writeJson(filePath, snapshot, { spaces: 2 });
+    return filePath;
+  }
+
+  /**
+   * 从文件导入快照
+   * P2-EI-01: 快照反序列化
+   * @param filePath 文件路径
+   */
+  async importSnapshot(filePath: string): Promise<ImportResult<Snapshot>> {
+    try {
+      const data = await fs.readJson(filePath);
+      const parsed = SnapshotSchema.safeParse(data);
+      if (!parsed.success) {
+        return {
+          success: false,
+          error: `快照数据校验失败: ${parsed.error.message}`,
+        };
+      }
+      return { success: true, data: parsed.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: `导入失败: ${(error as Error).message}`,
+      };
     }
   }
 }

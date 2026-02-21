@@ -26,6 +26,21 @@ const routes = [
         component: () => import('@/views/StoryAdvance.vue'),
       },
       {
+        path: 'session/:sessionId/snapshots',
+        name: 'SnapshotList',
+        component: () => import('@/views/SnapshotList.vue'),
+      },
+      {
+        path: 'session/:sessionId/multi',
+        name: 'MultiCharacterView',
+        component: () => import('@/views/MultiCharacterView.vue'),
+      },
+      {
+        path: 'session/:sessionId/report',
+        name: 'ComparisonReport',
+        component: () => import('@/views/ComparisonReport.vue'),
+      },
+      {
         path: 'scenes',
         name: 'SceneList',
         component: () => import('@/views/SceneList.vue'),

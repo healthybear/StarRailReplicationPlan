@@ -48,12 +48,17 @@ export {
   CharacterAgent,
   PromptBuilder,
   ResponseType,
+  ConflictArbitrator,
 } from './character-agent/index.js';
 export type {
   AgentResponse,
   ParsedResponseContent,
   DualCharacterResponse,
   PromptContext,
+  ConflictType,
+  ConflictDescription,
+  ArbitrationStrategy,
+  ArbitrationResult,
 } from './character-agent/index.js';
 
 // Story Orchestrator

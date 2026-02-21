@@ -16,6 +16,7 @@ import { FactionService } from './faction/faction.service.js';
 import { InputParser } from './input-parser/input-parser.js';
 import { CharacterAgent } from './character-agent/character-agent.js';
 import { PromptBuilder } from './character-agent/prompt-builder.js';
+import { ConflictArbitrator } from './character-agent/conflict-arbitrator.js';
 import { StoryOrchestrator } from './story-orchestrator/story-orchestrator.js';
 import { SnapshotService } from './story-orchestrator/snapshot.service.js';
 
@@ -99,6 +100,7 @@ export function initializeContainer(options: {
   container.registerSingleton(InputParser);
   container.registerSingleton(PromptBuilder); // CharacterAgent 的依赖
   container.registerSingleton(CharacterAgent);
+  container.registerSingleton(ConflictArbitrator);
   container.registerSingleton(StoryOrchestrator);
   container.registerSingleton(SnapshotService);
 }

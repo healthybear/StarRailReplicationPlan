@@ -39,6 +39,8 @@ export interface CompareOptions {
   includeRelationships?: boolean;
   /** 关系差异阈值（低于此值不报告） */
   relationshipThreshold?: number;
+  /** 是否包含判断/决策对比（P2-AE-01） */
+  includeJudgment?: boolean;
 }
 
 /**
@@ -218,6 +220,7 @@ export class AnchorEvaluator {
     const includeVision = options?.includeVision ?? true;
     const includeRelationships = options?.includeRelationships ?? true;
     const relationshipThreshold = options?.relationshipThreshold ?? 0.1;
+    const includeJudgment = options?.includeJudgment ?? true;
 
     const dimensions: ComparisonDimension[] = [];
     const differences: string[] = [];
@@ -264,6 +267,17 @@ export class AnchorEvaluator {
           dimensions.push(result.dimension);
           differences.push(...result.differences);
           totalDivergence += result.divergence;
+          dimensionCount++;
+        }
+      }
+
+      // 对比判断/决策（P2-AE-01）
+      if (includeJudgment && anchorChar.judgment) {
+        const judgmentResult = this.compareJudgment(anchorChar, currentChar);
+        if (judgmentResult) {
+          dimensions.push(judgmentResult.dimension);
+          differences.push(...judgmentResult.differences);
+          totalDivergence += judgmentResult.divergence;
           dimensionCount++;
         }
       }
@@ -548,5 +562,61 @@ export class AnchorEvaluator {
     }
 
     return `当前分支与原剧情差异较大（${(divergence * 100).toFixed(1)}%），共 ${differences.length} 处显著不同。`;
+  }
+
+  /**
+   * 对比判断/决策维度（P2-AE-01）
+   * 比较锚点中记录的角色判断与当前分支的判断
+   */
+  private compareJudgment(
+    anchorChar: AnchorCharacterState,
+    currentChar: {
+      name: string;
+      state: { knownInformation: Array<{ informationId: string }> };
+    }
+  ): {
+    dimension: ComparisonDimension;
+    differences: string[];
+    divergence: number;
+  } | null {
+    if (!anchorChar.judgment) return null;
+
+    // 当前分支没有记录判断时，视为完全不同
+    // 实际使用中，调用方可在 AnchorCharacterState 中填入当前判断
+    const currentJudgment = (currentChar as { judgment?: string }).judgment;
+
+    if (!currentJudgment) {
+      return {
+        dimension: {
+          name: `${anchorChar.characterName} 判断`,
+          originalValue: anchorChar.judgment,
+          currentValue: '（未记录）',
+          difference: '当前分支未记录判断，无法对比',
+          divergence: 0,
+        },
+        differences: [],
+        divergence: 0,
+      };
+    }
+
+    // 简单文本相似度：完全相同则无差异，否则标记为有差异
+    const isSame = anchorChar.judgment.trim() === currentJudgment.trim();
+    const divergence = isSame ? 0 : 0.5;
+
+    return {
+      dimension: {
+        name: `${anchorChar.characterName} 判断`,
+        originalValue: anchorChar.judgment,
+        currentValue: currentJudgment,
+        difference: isSame ? '判断一致' : '判断存在差异',
+        divergence,
+      },
+      differences: isSame
+        ? []
+        : [
+            `${anchorChar.characterName} 的判断与原剧情不同：原为「${anchorChar.judgment}」，当前为「${currentJudgment}」`,
+          ],
+      divergence,
+    };
   }
 }

@@ -583,4 +583,137 @@ describe('ExportImportService', () => {
       service.setExportDir(testDir);
     });
   });
+
+  // ==================== P2-EI-01 测试 ====================
+
+  describe('mergeCharacterState', () => {
+    it('能力值取较大值', () => {
+      const base = createTestCharacter('char-a', '角色A');
+      base.state.abilities = { combat: 40, stealth: 60 };
+      const incoming = createTestCharacter('char-a', '角色A');
+      incoming.state.abilities = { combat: 70, stealth: 30, magic: 50 };
+
+      const merged = service.mergeCharacterState(base, incoming);
+      expect(merged.state.abilities.combat).toBe(70);
+      expect(merged.state.abilities.stealth).toBe(60);
+      expect(merged.state.abilities.magic).toBe(50);
+    });
+
+    it('关系各维度取平均值', () => {
+      const base = createTestCharacter('char-a', '角色A');
+      base.state.relationships = {
+        'char-b': { trust: 0.8, hostility: 0.2, intimacy: 0.6, respect: 0.7 },
+      };
+      const incoming = createTestCharacter('char-a', '角色A');
+      incoming.state.relationships = {
+        'char-b': { trust: 0.4, hostility: 0.6, intimacy: 0.2, respect: 0.3 },
+      };
+
+      const merged = service.mergeCharacterState(base, incoming);
+      expect(merged.state.relationships['char-b'].trust).toBeCloseTo(0.6);
+      expect(merged.state.relationships['char-b'].hostility).toBeCloseTo(0.4);
+    });
+
+    it('已知信息取并集', () => {
+      const base = createTestCharacter('char-a', '角色A');
+      base.state.knownInformation = [
+        { informationId: 'info-1', acquiredAt: 1000 },
+      ];
+      const incoming = createTestCharacter('char-a', '角色A');
+      incoming.state.knownInformation = [
+        { informationId: 'info-1', acquiredAt: 1000 },
+        { informationId: 'info-2', acquiredAt: 2000 },
+      ];
+
+      const merged = service.mergeCharacterState(base, incoming);
+      expect(merged.state.knownInformation).toHaveLength(2);
+    });
+
+    it('不修改原对象', () => {
+      const base = createTestCharacter('char-a', '角色A');
+      base.state.abilities = { combat: 40 };
+      const incoming = createTestCharacter('char-a', '角色A');
+      incoming.state.abilities = { combat: 80 };
+
+      service.mergeCharacterState(base, incoming);
+      expect(base.state.abilities.combat).toBe(40);
+    });
+  });
+
+  describe('importSnapshotToSession', () => {
+    const makeSnapshot = (characters: Record<string, Character>) => ({
+      id: 'snap-1',
+      name: '测试快照',
+      createdAt: Date.now(),
+      state: {
+        worldState: createTestSession().worldState,
+        characters,
+        information: createTestSession().information,
+        metadata: createTestSession().metadata,
+      },
+    });
+
+    it('reject 策略：已存在角色被跳过', () => {
+      const session = createTestSession();
+      const snap = makeSnapshot({
+        march7: createTestCharacter('march7', '三月七'),
+        newChar: createTestCharacter('newChar', '新角色'),
+      });
+
+      const result = service.importSnapshotToSession(
+        snap as never,
+        session,
+        'reject'
+      );
+      expect(result.success).toBe(true);
+      expect(result.importedCharacterIds).toContain('newChar');
+      expect(result.skippedCharacterIds).toContain('march7');
+    });
+
+    it('overwrite 策略：覆盖已存在角色', () => {
+      const session = createTestSession();
+      const newMarch = createTestCharacter('march7', '三月七');
+      newMarch.state.abilities = { combat: 99 };
+      const snap = makeSnapshot({ march7: newMarch });
+
+      const result = service.importSnapshotToSession(
+        snap as never,
+        session,
+        'overwrite'
+      );
+      expect(result.importedCharacterIds).toContain('march7');
+      expect(session.characters['march7'].state.abilities.combat).toBe(99);
+    });
+
+    it('rename 策略：已存在角色生成新 ID', () => {
+      const session = createTestSession();
+      const snap = makeSnapshot({
+        march7: createTestCharacter('march7', '三月七'),
+      });
+
+      const result = service.importSnapshotToSession(
+        snap as never,
+        session,
+        'rename'
+      );
+      expect(result.importedCharacterIds.length).toBe(1);
+      expect(result.importedCharacterIds[0]).toMatch(/^march7_snap_/);
+    });
+
+    it('merge 策略：合并角色状态', () => {
+      const session = createTestSession();
+      session.characters['march7'].state.abilities = { combat: 40 };
+      const newMarch = createTestCharacter('march7', '三月七');
+      newMarch.state.abilities = { combat: 80 };
+      const snap = makeSnapshot({ march7: newMarch });
+
+      const result = service.importSnapshotToSession(
+        snap as never,
+        session,
+        'merge'
+      );
+      expect(result.importedCharacterIds).toContain('march7');
+      expect(session.characters['march7'].state.abilities.combat).toBe(80);
+    });
+  });
 });

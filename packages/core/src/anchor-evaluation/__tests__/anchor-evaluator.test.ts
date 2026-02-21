@@ -591,4 +591,109 @@ describe('AnchorEvaluator', () => {
       expect(result.overallAssessment).toContain('差异');
     });
   });
+
+  // ==================== P2-AE-01 判断维度对比 ====================
+
+  describe('Judgment Comparison (P2-AE-01)', () => {
+    it('锚点有判断、当前无判断时不计入差异', () => {
+      const anchorChar = createTestCharacterState('march7', '三月七');
+      (anchorChar as AnchorCharacterState & { judgment?: string }).judgment =
+        '应该帮助星';
+      const anchor = createTestAnchor('a1', [anchorChar]);
+      const session = createTestSession({
+        march7: {
+          id: 'march7',
+          name: '三月七',
+          state: { knownInformation: [], relationships: {} },
+        },
+      });
+
+      const result = evaluator.compare(session, anchor, {
+        includeJudgment: true,
+        includeVision: false,
+        includeRelationships: false,
+      });
+      // 无判断时 divergence 为 0，不影响总体差异
+      const judgmentDim = result.dimensions.find((d) =>
+        d.name.includes('判断')
+      );
+      expect(judgmentDim?.divergence).toBe(0);
+    });
+
+    it('判断一致时 divergence 为 0', () => {
+      const anchorChar = createTestCharacterState('march7', '三月七');
+      (anchorChar as AnchorCharacterState & { judgment?: string }).judgment =
+        '应该帮助星';
+      const anchor = createTestAnchor('a1', [anchorChar]);
+      const session = createTestSession({
+        march7: {
+          id: 'march7',
+          name: '三月七',
+          judgment: '应该帮助星',
+          state: { knownInformation: [], relationships: {} },
+        } as never,
+      });
+
+      const result = evaluator.compare(session, anchor, {
+        includeJudgment: true,
+        includeVision: false,
+        includeRelationships: false,
+      });
+      const judgmentDim = result.dimensions.find((d) =>
+        d.name.includes('判断')
+      );
+      expect(judgmentDim?.divergence).toBe(0);
+    });
+
+    it('判断不同时 divergence > 0 且有差异说明', () => {
+      const anchorChar = createTestCharacterState('march7', '三月七');
+      (anchorChar as AnchorCharacterState & { judgment?: string }).judgment =
+        '应该帮助星';
+      const anchor = createTestAnchor('a1', [anchorChar]);
+      const session = createTestSession({
+        march7: {
+          id: 'march7',
+          name: '三月七',
+          judgment: '不应该冒险',
+          state: { knownInformation: [], relationships: {} },
+        } as never,
+      });
+
+      const result = evaluator.compare(session, anchor, {
+        includeJudgment: true,
+        includeVision: false,
+        includeRelationships: false,
+      });
+      const judgmentDim = result.dimensions.find((d) =>
+        d.name.includes('判断')
+      );
+      expect(judgmentDim?.divergence).toBeGreaterThan(0);
+      expect(result.differences.some((d) => d.includes('判断'))).toBe(true);
+    });
+
+    it('includeJudgment=false 时不对比判断', () => {
+      const anchorChar = createTestCharacterState('march7', '三月七');
+      (anchorChar as AnchorCharacterState & { judgment?: string }).judgment =
+        '应该帮助星';
+      const anchor = createTestAnchor('a1', [anchorChar]);
+      const session = createTestSession({
+        march7: {
+          id: 'march7',
+          name: '三月七',
+          judgment: '不应该冒险',
+          state: { knownInformation: [], relationships: {} },
+        } as never,
+      });
+
+      const result = evaluator.compare(session, anchor, {
+        includeJudgment: false,
+        includeVision: false,
+        includeRelationships: false,
+      });
+      const judgmentDim = result.dimensions.find((d) =>
+        d.name.includes('判断')
+      );
+      expect(judgmentDim).toBeUndefined();
+    });
+  });
 });
