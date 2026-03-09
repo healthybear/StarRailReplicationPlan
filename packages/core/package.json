@@ -9,6 +9,38 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./story-orchestrator": {
+      "types": "./dist/story-orchestrator/index.d.ts",
+      "import": "./dist/story-orchestrator/index.js"
+    },
+    "./vision-manager": {
+      "types": "./dist/vision-manager/index.d.ts",
+      "import": "./dist/vision-manager/index.js"
+    },
+    "./character-state": {
+      "types": "./dist/character-state/index.d.ts",
+      "import": "./dist/character-state/index.js"
+    },
+    "./world-engine": {
+      "types": "./dist/world-engine/index.d.ts",
+      "import": "./dist/world-engine/index.js"
+    },
+    "./character-agent": {
+      "types": "./dist/character-agent/index.d.ts",
+      "import": "./dist/character-agent/index.js"
+    },
+    "./input-parser": {
+      "types": "./dist/input-parser/index.d.ts",
+      "import": "./dist/input-parser/index.js"
+    },
+    "./export-import": {
+      "types": "./dist/export-import/index.d.ts",
+      "import": "./dist/export-import/index.js"
+    },
+    "./anchor-evaluation": {
+      "types": "./dist/anchor-evaluation/index.d.ts",
+      "import": "./dist/anchor-evaluation/index.js"
     }
   },
   "scripts": {

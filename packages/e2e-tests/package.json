@@ -1,0 +1,25 @@
+{
+  "name": "@star-rail/e2e-tests",
+  "version": "0.1.0",
+  "description": "端到端功能测试",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:e2e": "tsx src/run-tests.ts"
+  },
+  "dependencies": {
+    "@star-rail/core": "workspace:*",
+    "@star-rail/infrastructure": "workspace:*",
+    "@star-rail/types": "workspace:*",
+    "reflect-metadata": "^0.2.1",
+    "tsyringe": "^4.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  }
+}

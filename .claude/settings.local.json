@@ -40,7 +40,18 @@
       "Bash(pnpm rebuild:*)",
       "Bash(pnpm approve-builds:*)",
       "Bash(pnpm remove:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(pnpm test:e2e)",
+      "Bash(pnpm -r build)",
+      "Bash(/Users/ls/workspace/StarRailReplicationPlan/docs/Phase1-测试完成总结.md:*)",
+      "Bash(for file in packages/core/src/story-orchestrator/index.ts packages/core/src/vision-manager/index.ts packages/core/src/character-state/index.ts packages/core/src/export-import/index.ts packages/core/src/anchor-evaluation/index.ts)",
+      "Bash(do)",
+      "Bash(echo \"=== $file ===\")",
+      "Read(//Users/ls/workspace/StarRailReplicationPlan/**)",
+      "Bash(done)",
+      "Bash(pnpm -r test)",
+      "Bash(tee test-output.log)",
+      "Bash(npx eslint --fix \"src/**/*.ts\")"
     ],
     "additionalDirectories": [
       "e:\\workspace\\StarRailReplicationPlan\\docs\\UI-UX"
