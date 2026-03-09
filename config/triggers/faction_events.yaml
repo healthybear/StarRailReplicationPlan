@@ -1,0 +1,229 @@
+# 势力相关触发表配置示例
+# P2-CS-01: 扩展触发表支持势力事件
+
+version: '2.0'
+
+rules:
+  # 势力冲突事件
+  - id: faction_conflict_trust_loss
+    name: 势力冲突导致信任度下降
+    eventType: faction_conflict
+    conditions:
+      - field: source_faction
+        operator: ne
+        value: target_faction
+    effects:
+      - target: relationship.trust
+        changeType: delta
+        value: -0.15
+        min: 0
+        max: 1
+      - target: relationship.hostility
+        changeType: delta
+        value: 0.1
+        min: 0
+        max: 1
+    priority: 80
+
+  # 势力结盟事件
+  - id: faction_alliance_trust_gain
+    name: 势力结盟导致信任度提升
+    eventType: faction_alliance
+    conditions:
+      - field: source_faction
+        operator: ne
+        value: target_faction
+    effects:
+      - target: relationship.trust
+        changeType: delta
+        value: 0.2
+        min: 0
+        max: 1
+      - target: relationship.hostility
+        changeType: delta
+        value: -0.15
+        min: 0
+        max: 1
+    priority: 80
+
+  # 同势力成员互助
+  - id: same_faction_help
+    name: 同势力成员互助增加信任
+    eventType: help_action
+    conditions:
+      - field: source_faction
+        operator: eq
+        value: target_faction
+    effects:
+      - target: relationship.trust
+        changeType: delta
+        value: 0.1
+        min: 0
+        max: 1
+      - target: relationship.affection
+        changeType: delta
+        value: 0.05
+        min: 0
+        max: 1
+    priority: 70
+
+  # 背叛势力
+  - id: faction_betrayal
+    name: 背叛势力导致关系恶化
+    eventType: faction_betrayal
+    effects:
+      - target: relationship.trust
+        changeType: delta
+        value: -0.4
+        min: 0
+        max: 1
+      - target: relationship.hostility
+        changeType: delta
+        value: 0.3
+        min: 0
+        max: 1
+      - target: relationship.respect
+        changeType: delta
+        value: -0.2
+        min: 0
+        max: 1
+    priority: 90
+
+  # 势力成员加入
+  - id: faction_member_join
+    name: 新成员加入势力
+    eventType: faction_member_join
+    conditions:
+      - field: source_faction
+        operator: eq
+        value: target_faction
+    effects:
+      - target: relationship.trust
+        changeType: set
+        value: 0.5
+        min: 0
+        max: 1
+      - target: relationship.respect
+        changeType: set
+        value: 0.5
+        min: 0
+        max: 1
+    priority: 60
+
+  # 敌对势力遭遇
+  - id: hostile_faction_encounter
+    name: 敌对势力遭遇
+    eventType: encounter
+    conditions:
+      - field: faction_relationship
+        operator: lt
+        value: -0.5
+    effects:
+      - target: relationship.hostility
+        changeType: delta
+        value: 0.05
+        min: 0
+        max: 1
+      - target: relationship.fear
+        changeType: delta
+        value: 0.03
+        min: 0
+        max: 1
+    priority: 50
+
+  # 势力领袖命令
+  - id: faction_leader_command
+    name: 势力领袖命令增加依赖度
+    eventType: leader_command
+    conditions:
+      - field: source_is_leader
+        operator: eq
+        value: true
+      - field: source_faction
+        operator: eq
+        value: target_faction
+    effects:
+      - target: relationship.dependence
+        changeType: delta
+        value: 0.05
+        min: 0
+        max: 1
+      - target: relationship.respect
+        changeType: delta
+        value: 0.03
+        min: 0
+        max: 1
+    priority: 70
+
+  # 共同战斗（同势力）
+  - id: faction_combat_together
+    name: 同势力成员共同战斗
+    eventType: combat_together
+    conditions:
+      - field: source_faction
+        operator: eq
+        value: target_faction
+    effects:
+      - target: relationship.trust
+        changeType: delta
+        value: 0.08
+        min: 0
+        max: 1
+      - target: relationship.intimacy
+        changeType: delta
+        value: 0.05
+        min: 0
+        max: 1
+      - target: relationship.affection
+        changeType: delta
+        value: 0.03
+        min: 0
+        max: 1
+    priority: 75
+
+  # 势力资源分配
+  - id: faction_resource_share
+    name: 势力资源分配
+    eventType: resource_share
+    conditions:
+      - field: source_faction
+        operator: eq
+        value: target_faction
+    effects:
+      - target: relationship.trust
+        changeType: delta
+        value: 0.05
+        min: 0
+        max: 1
+      - target: relationship.affection
+        changeType: delta
+        value: 0.03
+        min: 0
+        max: 1
+    priority: 60
+
+  # 跨势力合作
+  - id: cross_faction_cooperation
+    name: 跨势力合作
+    eventType: cooperation
+    conditions:
+      - field: source_faction
+        operator: ne
+        value: target_faction
+    effects:
+      - target: relationship.trust
+        changeType: delta
+        value: 0.12
+        min: 0
+        max: 1
+      - target: relationship.respect
+        changeType: delta
+        value: 0.08
+        min: 0
+        max: 1
+      - target: relationship.hostility
+        changeType: delta
+        value: -0.05
+        min: 0
+        max: 1
+    priority: 75

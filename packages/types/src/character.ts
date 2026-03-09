@@ -3,6 +3,7 @@ import { z } from 'zod';
 /**
  * 关系 Schema（多维度）
  * 描述人物之间的关系状态
+ * P2-CS-01: 扩展多维度关系网
  */
 export const RelationshipSchema = z.object({
   /** 信任度 (0-1) */
@@ -13,6 +14,14 @@ export const RelationshipSchema = z.object({
   intimacy: z.number().min(0).max(1),
   /** 尊重度 (0-1) */
   respect: z.number().min(0).max(1),
+  /** P2-CS-01 新增：好感度 (0-1) */
+  affection: z.number().min(0).max(1).optional(),
+  /** P2-CS-01 新增：恐惧度 (0-1) */
+  fear: z.number().min(0).max(1).optional(),
+  /** P2-CS-01 新增：依赖度 (0-1) */
+  dependence: z.number().min(0).max(1).optional(),
+  /** P2-CS-01 新增：关系标签（如 "mentor", "rival", "family"） */
+  tags: z.array(z.string()).optional(),
   /** 扩展字段（可选） */
   custom: z.record(z.number().min(0).max(1)).optional(),
 });
@@ -143,6 +152,7 @@ export type Character = z.infer<typeof CharacterSchema>;
 
 /**
  * 创建默认关系
+ * P2-CS-01: 包含新增的关系维度
  */
 export function createDefaultRelationship(): Relationship {
   return {
@@ -150,6 +160,10 @@ export function createDefaultRelationship(): Relationship {
     hostility: 0,
     intimacy: 0,
     respect: 0.5,
+    affection: 0.5,
+    fear: 0,
+    dependence: 0,
+    tags: [],
   };
 }
 
