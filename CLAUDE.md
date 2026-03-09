@@ -177,3 +177,179 @@ packages/{package}/src/{module}/__tests__/{module}.test.ts
 □ 相关配置文件创建
 □ 导出接口更新
 ```
+
+---
+
+## 六、技术规范
+
+### 6.1 模块系统规范
+
+**规则**: 项目统一使用 CommonJS 模块系统
+
+**原因**: NestJS 默认使用 CommonJS，为保持兼容性，所有包统一使用 CommonJS
+
+**配置要求**:
+
+1. **package.json**:
+   - 不要设置 `"type": "module"`
+   - `exports` 字段必须同时包含 `"require"` 和 `"import"` 入口
+
+```json
+{
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  }
+}
+```
+
+2. **tsconfig.json**:
+   - `"module": "CommonJS"`
+   - `"moduleResolution": "node"`
+
+3. **构建脚本**:
+   - tsup: `--format cjs`
+   - tsc: 使用 tsconfig.json 配置
+
+**检查清单**:
+
+```
+□ package.json 无 "type": "module"
+□ exports 包含 "require" 入口
+□ tsconfig.json module 为 CommonJS
+□ 构建脚本使用 cjs 格式
+```
+
+### 6.2 依赖注入规范
+
+**规则**: NestJS 模块使用 Provider 工厂桥接 tsyringe 容器
+
+**Core 服务注册**:
+
+1. 在 `packages/api/src/common/providers/core.provider.ts` 中注册
+2. 使用类 token 而非字符串 token
+3. 通过 `container.resolve(ClassName)` 获取实例
+
+**示例**:
+
+```typescript
+// ✅ 正确：使用类 token
+import { StoryOrchestrator } from '@star-rail/core';
+
+export const STORY_ORCHESTRATOR = 'STORY_ORCHESTRATOR';
+
+{
+  provide: STORY_ORCHESTRATOR,
+  useFactory: () => container.resolve(StoryOrchestrator),
+}
+
+// ❌ 错误：使用字符串 token
+{
+  provide: STORY_ORCHESTRATOR,
+  useFactory: () => container.resolve('StoryOrchestrator'),
+}
+```
+
+**全局模块**:
+
+- Core 服务通过 `CoreModule` 提供
+- `CoreModule` 使用 `@Global()` 装饰器
+- 业务模块无需重复导入 `CoreModule`
+
+**注入服务**:
+
+```typescript
+@Injectable()
+export class MyService {
+  constructor(
+    @Inject(STORY_ORCHESTRATOR)
+    private readonly storyOrchestrator: StoryOrchestrator
+  ) {}
+}
+```
+
+### 6.3 TypeScript 配置规范
+
+**根目录 tsconfig.json** (基础配置):
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "strict": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  }
+}
+```
+
+**包级别 tsconfig.json** (继承):
+
+```json
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true
+  }
+}
+```
+
+**关键配置**:
+
+- `experimentalDecorators: true` - NestJS 装饰器必需
+- `emitDecoratorMetadata: true` - DI 元数据必需
+- `declaration: true` - 库包必须生成类型定义
+
+### 6.4 测试文件规范
+
+**ESLint 规则放宽**:
+
+测试文件（`*.spec.ts`, `*.test.ts`）可以放宽以下规则：
+
+```javascript
+{
+  files: ['**/*.spec.ts', '**/*.test.ts'],
+  rules: {
+    '@typescript-eslint/unbound-method': 'off',
+    '@typescript-eslint/no-unsafe-assignment': 'off',
+  },
+}
+```
+
+**Mock 对象创建**:
+
+优先创建类型化的 mock 对象，避免使用 `as any`:
+
+```typescript
+// ✅ 推荐
+const mockWorldState: WorldState = {
+  currentSceneId: 'scene_001',
+  timeline: { currentTurn: 0, timestamp: Date.now() },
+  // ...
+};
+
+// ❌ 避免
+const mockWorldState = {} as any;
+```
+
+---
+
+## 七、问题排查指南
+
+遇到问题时，参考 `docs/技术问题与解决方案.md` 文档。
+
+**常见错误**:
+
+| 错误                            | 文档章节                    |
+| ------------------------------- | --------------------------- |
+| `ERR_REQUIRE_ESM`               | 一、模块系统兼容性问题      |
+| `Unregistered dependency token` | 二、依赖注入容器桥接问题    |
+| TypeScript 编译错误             | 三、TypeScript 配置最佳实践 |
+| ESLint 测试文件错误             | 四、ESLint 配置问题         |
