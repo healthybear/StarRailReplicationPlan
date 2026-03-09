@@ -11,6 +11,11 @@ const routes = [
         component: () => import('@/views/HomePage.vue'),
       },
       {
+        path: 'api-test',
+        name: 'ApiTest',
+        component: () => import('@/views/ApiTest.vue'),
+      },
+      {
         path: 'sessions',
         name: 'SessionList',
         component: () => import('@/views/SessionList.vue'),
