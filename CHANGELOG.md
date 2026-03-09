@@ -4,6 +4,99 @@
 
 ---
 
+## [4.0.0-dev] - 2026-03-10
+
+### Phase 4 后端 API 开发与前端集成
+
+#### 新增
+
+**后端 API 模块（6 个核心模块）**
+
+- **Session 模块**：会话管理 CRUD API（`packages/api/src/modules/session/`）
+  - POST `/api/sessions` - 创建会话
+  - GET `/api/sessions` - 获取会话列表
+  - GET `/api/sessions/:id` - 获取会话详情
+  - DELETE `/api/sessions/:id` - 删除会话
+
+- **Story 模块**：剧情推进 API（`packages/api/src/modules/story/`）
+  - POST `/api/story/advance` - 单角色剧情推进
+  - POST `/api/story/advance-multi` - 多角色剧情推进
+  - POST `/api/story/advance-dual` - 双角色剧情推进
+
+- **Snapshot 模块**：快照管理 API（`packages/api/src/modules/snapshot/`）
+  - GET `/api/snapshots/:sessionId` - 获取快照列表
+  - POST `/api/snapshots/:sessionId` - 创建快照
+  - POST `/api/snapshots/:sessionId/:id/restore` - 恢复快照
+  - DELETE `/api/snapshots/:sessionId/:id` - 删除快照
+
+- **Character 模块**：人物管理 CRUD API（`packages/api/src/modules/character/`）
+  - GET `/api/characters` - 获取人物列表
+  - GET `/api/characters/:id` - 获取人物详情
+  - POST `/api/characters` - 创建人物
+  - PUT `/api/characters/:id` - 更新人物
+  - DELETE `/api/characters/:id` - 删除人物
+
+- **Scene 模块**：场景管理 CRUD API（`packages/api/src/modules/scene/`）
+  - GET `/api/scenes` - 获取场景列表
+  - GET `/api/scenes/:id` - 获取场景详情
+  - POST `/api/scenes` - 创建场景
+  - PUT `/api/scenes/:id` - 更新场景
+  - DELETE `/api/scenes/:id` - 删除场景
+
+- **Anchor 模块**：锚点管理与对比 API（`packages/api/src/modules/anchor/`）
+  - GET `/api/anchors/:sessionId` - 获取锚点列表
+  - GET `/api/anchors/:sessionId/:anchorId` - 获取锚点详情
+  - POST `/api/anchors` - 创建锚点
+  - DELETE `/api/anchors/:sessionId/:anchorId` - 删除锚点
+  - POST `/api/anchors/compare` - 锚点对比
+
+**前端 API 客户端层**
+
+- `packages/web/src/api/client.ts`：Axios 客户端配置，请求/响应拦截器
+- `packages/web/src/api/session.ts`：会话管理 API 服务
+- `packages/web/src/api/story.ts`：剧情推进 API 服务
+- `packages/web/src/api/snapshot.ts`：快照管理 API 服务
+- `packages/web/src/api/character.ts`：人物管理 API 服务
+- `packages/web/src/api/scene.ts`：场景管理 API 服务
+- `packages/web/src/api/anchor.ts`：锚点管理 API 服务
+- `packages/web/.env.development`：环境变量配置（VITE_API_BASE_URL）
+
+**Vue 组件 API 集成**
+
+- `SessionList.vue`：使用 sessionApi 加载会话列表，支持创建/删除操作
+- `CharacterList.vue`：使用 characterApi 加载人物列表，支持创建/删除操作
+- `SceneList.vue`：使用 sceneApi 加载场景列表，支持创建/删除操作
+- 所有列表页面添加错误处理和加载状态
+
+#### 修复
+
+**模块系统兼容性**
+
+- 统一使用 CommonJS 模块系统，解决 ES Modules 导入失败问题
+- 移除所有 `"type": "module"` 配置
+- 添加 "require" 入口到 package.json exports
+- 更新 tsconfig.json 使用 CommonJS
+
+**DI 容器桥接**
+
+- 创建 `CoreModule` 作为全局模块（@Global()）
+- 使用 Provider 工厂桥接 tsyringe 和 NestJS DI 系统
+- 修复 "Unregistered dependency token" 错误
+
+#### 测试
+
+- `@star-rail/api`：44 个单元测试，100% 通过
+- 端到端测试：API 服务器运行正常，前端成功调用后端 API
+
+#### 文档
+
+- 新增：`docs/Phase4-后端API开发完成总结.md`
+- 新增：`docs/技术问题与解决方案.md`
+- 更新：`CLAUDE.md` 添加技术规范章节
+- 更新：`docs/项目进度表.md` 添加 Phase 4 进度
+
+---
+
 ## [3.0.0-dev] - 2026-02-21
 
 ### Phase 3 功能扩展
