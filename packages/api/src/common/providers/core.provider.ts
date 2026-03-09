@@ -4,6 +4,13 @@ import {
   initializeContainer,
   getContainer,
   type SimpleLLMConfig,
+  StoryOrchestrator,
+  SnapshotService,
+  AnchorEvaluator,
+  CharacterStateService,
+  FactionService,
+  WorldEngine,
+  VisionManager,
 } from '@star-rail/core';
 
 // Token 常量
@@ -14,7 +21,6 @@ export const ANCHOR_EVALUATOR = 'ANCHOR_EVALUATOR';
 export const CHARACTER_STATE_SERVICE = 'CHARACTER_STATE_SERVICE';
 export const FACTION_SERVICE = 'FACTION_SERVICE';
 export const WORLD_ENGINE = 'WORLD_ENGINE';
-export const EXPORT_IMPORT_SERVICE = 'EXPORT_IMPORT_SERVICE';
 export const VISION_MANAGER = 'VISION_MANAGER';
 
 /**
@@ -49,35 +55,31 @@ export function createCoreProviders(configService: ConfigService): Provider[] {
     },
     {
       provide: STORY_ORCHESTRATOR,
-      useFactory: () => container.resolve('StoryOrchestrator'),
+      useFactory: () => container.resolve(StoryOrchestrator),
     },
     {
       provide: SNAPSHOT_SERVICE,
-      useFactory: () => container.resolve('SnapshotService'),
+      useFactory: () => container.resolve(SnapshotService),
     },
     {
       provide: ANCHOR_EVALUATOR,
-      useFactory: () => container.resolve('AnchorEvaluator'),
+      useFactory: () => container.resolve(AnchorEvaluator),
     },
     {
       provide: CHARACTER_STATE_SERVICE,
-      useFactory: () => container.resolve('CharacterStateService'),
+      useFactory: () => container.resolve(CharacterStateService),
     },
     {
       provide: FACTION_SERVICE,
-      useFactory: () => container.resolve('FactionService'),
+      useFactory: () => container.resolve(FactionService),
     },
     {
       provide: WORLD_ENGINE,
-      useFactory: () => container.resolve('WorldEngine'),
-    },
-    {
-      provide: EXPORT_IMPORT_SERVICE,
-      useFactory: () => container.resolve('ExportImportService'),
+      useFactory: () => container.resolve(WorldEngine),
     },
     {
       provide: VISION_MANAGER,
-      useFactory: () => container.resolve('VisionManager'),
+      useFactory: () => container.resolve(VisionManager),
     },
   ];
 }

@@ -8,17 +8,9 @@ import { createCoreProviders } from '../providers/core.provider';
  */
 @Global()
 @Module({
-  providers: [
-    {
-      provide: 'CORE_PROVIDERS_INIT',
-      useFactory: (configService: ConfigService) => {
-        const providers = createCoreProviders(configService);
-        // 返回 providers 数组以便其他模块使用
-        return providers;
-      },
-      inject: [ConfigService],
-    },
-  ],
-  exports: ['CORE_PROVIDERS_INIT'],
+  providers: createCoreProviders(new ConfigService()),
+  exports: createCoreProviders(new ConfigService()).map((p) =>
+    typeof p === 'object' && 'provide' in p ? p.provide : p,
+  ),
 })
 export class CoreModule {}

@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { SessionModule } from './modules/session/session.module';
 import { StoryModule } from './modules/story/story.module';
 import { SnapshotModule } from './modules/snapshot/snapshot.module';
-import { createCoreProviders } from './common/providers/core.provider';
+import { CoreModule } from './common/modules/core.module';
 
 @Module({
   imports: [
@@ -14,17 +14,13 @@ import { createCoreProviders } from './common/providers/core.provider';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    CoreModule,
     AuthModule,
     SessionModule,
     StoryModule,
     SnapshotModule,
   ],
   controllers: [AppController],
-  providers: [AppService, ...createCoreProviders(new ConfigService())],
-  exports: [
-    ...createCoreProviders(new ConfigService()).map((p) =>
-      typeof p === 'object' && 'provide' in p ? p.provide : p,
-    ),
-  ],
+  providers: [AppService],
 })
 export class AppModule {}
