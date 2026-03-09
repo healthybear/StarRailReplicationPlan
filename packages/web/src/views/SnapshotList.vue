@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { snapshotApi } from '@/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -16,35 +17,9 @@ interface Snapshot {
   size: string;
 }
 
-const snapshots = ref<Snapshot[]>([
-  {
-    id: 'snap-001',
-    name: '初始状态快照',
-    nodeIndex: 0,
-    description: '会话开始时的初始状态，包含所有角色的初始属性和关系。',
-    characters: ['开拓者', '布洛妮娅', '希儿'],
-    createdAt: '2026-02-18 10:00',
-    size: '12.4 KB',
-  },
-  {
-    id: 'snap-002',
-    name: '审讯室对峙后',
-    nodeIndex: 12,
-    description: '开拓者与卡芙卡对峙结束后的状态，角色关系发生了显著变化。',
-    characters: ['开拓者', '卡芙卡', '银狼'],
-    createdAt: '2026-02-18 14:32',
-    size: '18.7 KB',
-  },
-  {
-    id: 'snap-003',
-    name: '地下城探索中',
-    nodeIndex: 21,
-    description: '队伍深入地下城后的状态快照，记录了探索过程中的信息积累。',
-    characters: ['开拓者', '希儿', '娜塔莎'],
-    createdAt: '2026-02-19 09:15',
-    size: '24.1 KB',
-  },
-]);
+const snapshots = ref<Snapshot[]>([]);
+const loading = ref(false);
+const error = ref<string>('');
 
 const deleteDialog = ref(false);
 const deleteTargetId = ref('');
@@ -59,14 +34,45 @@ const conflictOptions = [
   { value: 'reject', label: '跳过', description: '跳过已存在的角色，只导入新角色', icon: 'mdi-cancel', color: 'grey' },
 ];
 
+// 加载快照列表
+const loadSnapshots = async () => {
+  try {
+    loading.value = true;
+    error.value = '';
+    const data = await snapshotApi.getAll(sessionId.value);
+
+    // 转换 API 数据格式
+    snapshots.value = data.map((snap: any) => ({
+      id: snap.id,
+      name: snap.name,
+      nodeIndex: snap.nodeIndex || 0,
+      description: snap.description || '',
+      characters: snap.characters || [],
+      createdAt: new Date(snap.createdAt).toLocaleString('zh-CN'),
+      size: '未知', // API 暂不返回大小
+    }));
+  } catch (e: any) {
+    error.value = `加载快照列表失败: ${e.message}`;
+    console.error('Failed to load snapshots:', e);
+  } finally {
+    loading.value = false;
+  }
+};
+
 const confirmDelete = (id: string) => {
   deleteTargetId.value = id;
   deleteDialog.value = true;
 };
 
-const doDelete = () => {
-  snapshots.value = snapshots.value.filter(s => s.id !== deleteTargetId.value);
-  deleteDialog.value = false;
+const doDelete = async () => {
+  try {
+    await snapshotApi.delete(sessionId.value, deleteTargetId.value);
+    await loadSnapshots();
+    deleteDialog.value = false;
+  } catch (e: any) {
+    error.value = `删除快照失败: ${e.message}`;
+    console.error('Failed to delete snapshot:', e);
+  }
 };
 
 const confirmLoad = (id: string) => {
@@ -74,16 +80,24 @@ const confirmLoad = (id: string) => {
   loadDialog.value = true;
 };
 
-const doLoad = () => {
-  // TODO: 调用 ExportImportService.importSnapshotToSession
-  console.log('加载快照', loadTargetId.value, '策略:', conflictStrategy.value);
-  loadDialog.value = false;
-  router.push({ name: 'StoryAdvance', params: { sessionId: sessionId.value } });
+const doLoad = async () => {
+  try {
+    await snapshotApi.restore(sessionId.value, loadTargetId.value);
+    loadDialog.value = false;
+    router.push({ name: 'StoryAdvance', params: { sessionId: sessionId.value } });
+  } catch (e: any) {
+    error.value = `恢复快照失败: ${e.message}`;
+    console.error('Failed to restore snapshot:', e);
+  }
 };
 
 const goBack = () => {
   router.push({ name: 'StoryAdvance', params: { sessionId: sessionId.value } });
 };
+
+onMounted(() => {
+  loadSnapshots();
+});
 </script>
 
 <template>

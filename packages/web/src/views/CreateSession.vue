@@ -1,102 +1,75 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { sessionApi, characterApi, sceneApi, type Character, type Scene } from '@/api';
 
 const router = useRouter();
 
 // 步骤控制
 const currentStep = ref(1);
-const totalSteps = 4;
+const totalSteps = 3;
 
 // 步骤 1: 基本信息
 const sessionName = ref('');
 const sessionDescription = ref('');
 
-// 步骤 2: 配置加载
-const selectedTemplate = ref('general');
-const uploadedFile = ref<File | null>(null);
-const searchQuery = ref('');
+// 步骤 2: 选择场景和角色
+const selectedSceneId = ref('');
+const selectedCharacterIds = ref<string[]>([]);
+const scenes = ref<Scene[]>([]);
+const characters = ref<Character[]>([]);
+const loadingScenes = ref(false);
+const loadingCharacters = ref(false);
 
-// 模板列表
-const templates = ref([
-  {
-    id: 'general',
-    name: '通用助手',
-    description: '适用于日常任务、问答和一般文本处理的平衡配置。',
-    icon: 'mdi-chat',
-    color: 'primary',
-  },
-  {
-    id: 'code',
-    name: '代码专家',
-    description: '针对调试、代码生成和技术文档优化。',
-    icon: 'mdi-code-tags',
-    color: 'blue',
-  },
-  {
-    id: 'creative',
-    name: '创意写作',
-    description: '高温度设置，适合富有想象力的故事创作和营销文案。',
-    icon: 'mdi-pencil',
-    color: 'purple',
-  },
-  {
-    id: 'analyst',
-    name: '数据分析',
-    description: '专注于结构化输出、数据解析和洞察生成。',
-    icon: 'mdi-chart-line',
-    color: 'green',
-  },
-  {
-    id: 'support',
-    name: '支持机器人',
-    description: '礼貌、富有同理心的语气，严格遵守系统指南。',
-    icon: 'mdi-face-agent',
-    color: 'orange',
-  },
-  {
-    id: 'custom',
-    name: '自定义空白',
-    description: '从头开始，手动配置所有内容。',
-    icon: 'mdi-plus',
-    color: 'grey',
-  },
-]);
-
-// 步骤 3: 参数配置
-const parameters = ref({
-  temperature: 0.7,
-  maxTokens: 2000,
-  topP: 0.9,
-  frequencyPenalty: 0,
-  presencePenalty: 0,
-});
-
-// 步骤 4: 审核
+// 步骤 3: 审核
 const isCreating = ref(false);
+const error = ref<string>('');
+
+// Load data
+const loadScenes = async () => {
+  try {
+    loadingScenes.value = true;
+    const data = await sceneApi.getAll();
+    scenes.value = data;
+  } catch (e: any) {
+    error.value = `加载场景列表失败: ${e.message}`;
+  } finally {
+    loadingScenes.value = false;
+  }
+};
+
+const loadCharacters = async () => {
+  try {
+    loadingCharacters.value = true;
+    const data = await characterApi.getAll();
+    characters.value = data;
+  } catch (e: any) {
+    error.value = `加载人物列表失败: ${e.message}`;
+  } finally {
+    loadingCharacters.value = false;
+  }
+};
 
 // 计算属性
-const filteredTemplates = computed(() => {
-  if (!searchQuery.value) return templates.value;
-  return templates.value.filter(t =>
-    t.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    t.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-  );
-});
-
 const canProceed = computed(() => {
   switch (currentStep.value) {
     case 1:
       return sessionName.value.trim().length > 0;
     case 2:
-      return selectedTemplate.value !== null || uploadedFile.value !== null;
+      return selectedSceneId.value && selectedCharacterIds.value.length > 0;
     case 3:
-      return true;
-    case 4:
       return true;
     default:
       return false;
   }
+});
+
+const selectedScene = computed(() => {
+  return scenes.value.find(s => s.sceneId === selectedSceneId.value);
+});
+
+const selectedCharacters = computed(() => {
+  return characters.value.filter(c => selectedCharacterIds.value.includes(c.characterId));
 });
 
 // 方法
@@ -112,33 +85,40 @@ const prevStep = () => {
   }
 };
 
-const handleFileUpload = (files: File[]) => {
-  if (files && files.length > 0) {
-    uploadedFile.value = files[0];
+const toggleCharacter = (characterId: string) => {
+  const index = selectedCharacterIds.value.indexOf(characterId);
+  if (index > -1) {
+    selectedCharacterIds.value.splice(index, 1);
+  } else {
+    selectedCharacterIds.value.push(characterId);
   }
 };
 
-const selectTemplate = (templateId: string) => {
-  selectedTemplate.value = templateId;
-};
-
 const createSession = async () => {
-  isCreating.value = true;
+  try {
+    isCreating.value = true;
+    error.value = '';
 
-  // TODO: 调用后端 API 创建会话
-  setTimeout(() => {
+    await sessionApi.create({
+      sessionName: sessionName.value,
+      sceneId: selectedSceneId.value,
+      characterIds: selectedCharacterIds.value,
+    });
+
+    router.push({ name: 'SessionList' });
+  } catch (e: any) {
+    error.value = `创建会话失败: ${e.message}`;
     isCreating.value = false;
-    router.push({ name: 'Home' });
-  }, 2000);
+  }
 };
 
 const getStepIcon = (step: number) => {
-  const icons = ['mdi-information', 'mdi-cog', 'mdi-tune', 'mdi-eye'];
+  const icons = ['mdi-information', 'mdi-account-group', 'mdi-eye'];
   return icons[step - 1];
 };
 
 const getStepTitle = (step: number) => {
-  const titles = ['基本信息', '配置加载', '参数设置', '审核确认'];
+  const titles = ['基本信息', '选择场景和角色', '审核确认'];
   return titles[step - 1];
 };
 
@@ -147,6 +127,11 @@ const getStepStatus = (step: number) => {
   if (step === currentStep.value) return 'active';
   return 'pending';
 };
+
+onMounted(() => {
+  loadScenes();
+  loadCharacters();
+});
 </script>
 
 <template>
@@ -181,7 +166,7 @@ const getStepStatus = (step: number) => {
       <div class="max-w-5xl mx-auto py-10 px-4">
         <v-card elevation="1" class="pa-8">
           <!-- 步骤指示器 -->
-          <div class="grid grid-cols-4 gap-4 mb-10">
+          <div class="grid grid-cols-3 gap-4 mb-10">
             <div
               v-for="step in totalSteps"
               :key="step"
@@ -249,87 +234,85 @@ const getStepStatus = (step: number) => {
             />
           </div>
 
-          <!-- 步骤 2: 配置加载 -->
+          <!-- 步骤 2: 选择场景和角色 -->
           <div v-if="currentStep === 2" class="space-y-8">
             <div class="text-center mb-8">
-              <h1 class="text-3xl font-bold mb-2">配置加载</h1>
-              <p class="text-slate-600">选择预定义模板或上传自定义 JSON/YAML 配置文件</p>
+              <h1 class="text-3xl font-bold mb-2">选择场景和角色</h1>
+              <p class="text-slate-600">为您的会话选择场景和参与的角色</p>
             </div>
 
-            <!-- 文件上传区 -->
+            <!-- 场景选择 -->
             <div>
-              <label class="block text-sm font-bold text-slate-700 mb-3">上传自定义配置</label>
-              <v-file-input
-                v-model="uploadedFile"
-                accept=".json,.yaml,.yml"
-                prepend-icon=""
-                prepend-inner-icon="mdi-upload"
-                variant="outlined"
-                placeholder="拖放文件或点击浏览"
-                show-size
-                class="custom-file-input"
-                @update:model-value="handleFileUpload"
-              >
-                <template #prepend-inner>
-                  <div class="flex flex-col items-center justify-center py-8 w-full">
-                    <v-avatar color="primary" size="64" class="mb-4">
-                      <v-icon size="32">mdi-upload</v-icon>
-                    </v-avatar>
-                    <h3 class="text-lg font-bold mb-1">拖放配置文件到这里</h3>
-                    <p class="text-sm text-slate-500 mb-4">支持 .json 和 .yaml 文件（最大 5MB）</p>
-                  </div>
-                </template>
-              </v-file-input>
-            </div>
-
-            <!-- 模板库 -->
-            <div>
-              <div class="flex items-center justify-between mb-4">
-                <label class="text-sm font-bold text-slate-700 uppercase tracking-wide">
-                  热门模板
-                </label>
-                <v-text-field
-                  v-model="searchQuery"
-                  prepend-inner-icon="mdi-magnify"
-                  placeholder="搜索模板..."
-                  variant="solo-filled"
-                  flat
-                  density="compact"
-                  hide-details
-                  class="max-w-xs"
-                  bg-color="grey-lighten-4"
-                />
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <label class="block text-sm font-bold text-slate-700 mb-3">选择场景</label>
+              <v-progress-linear v-if="loadingScenes" indeterminate color="primary" class="mb-4" />
+              <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <v-card
-                  v-for="template in filteredTemplates"
-                  :key="template.id"
+                  v-for="scene in scenes"
+                  :key="scene.sceneId"
                   :class="[
                     'cursor-pointer transition-all',
-                    selectedTemplate === template.id
+                    selectedSceneId === scene.sceneId
                       ? 'ring-2 ring-primary border-primary'
                       : 'hover:border-primary/50',
                   ]"
                   elevation="1"
-                  @click="selectTemplate(template.id)"
+                  @click="selectedSceneId = scene.sceneId"
                 >
                   <v-card-text class="pa-5">
                     <div class="flex items-start justify-between mb-4">
-                      <v-avatar :color="`${template.color}-lighten-4`" size="48">
-                        <v-icon :color="template.color">{{ template.icon }}</v-icon>
+                      <v-avatar color="primary-lighten-4" size="48">
+                        <v-icon color="primary">mdi-map-marker</v-icon>
                       </v-avatar>
                       <v-icon
-                        v-if="selectedTemplate === template.id"
+                        v-if="selectedSceneId === scene.sceneId"
                         color="primary"
                         size="24"
                       >
                         mdi-check-circle
                       </v-icon>
                     </div>
-                    <h4 class="font-bold mb-2">{{ template.name }}</h4>
+                    <h4 class="font-bold mb-2">{{ scene.name }}</h4>
                     <p class="text-xs text-slate-500 leading-relaxed">
-                      {{ template.description }}
+                      {{ scene.description }}
+                    </p>
+                  </v-card-text>
+                </v-card>
+              </div>
+            </div>
+
+            <!-- 角色选择 -->
+            <div>
+              <label class="block text-sm font-bold text-slate-700 mb-3">选择角色（可多选）</label>
+              <v-progress-linear v-if="loadingCharacters" indeterminate color="primary" class="mb-4" />
+              <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <v-card
+                  v-for="character in characters"
+                  :key="character.characterId"
+                  :class="[
+                    'cursor-pointer transition-all',
+                    selectedCharacterIds.includes(character.characterId)
+                      ? 'ring-2 ring-primary border-primary'
+                      : 'hover:border-primary/50',
+                  ]"
+                  elevation="1"
+                  @click="toggleCharacter(character.characterId)"
+                >
+                  <v-card-text class="pa-5">
+                    <div class="flex items-start justify-between mb-4">
+                      <v-avatar color="primary-lighten-4" size="48">
+                        <v-icon color="primary">mdi-account</v-icon>
+                      </v-avatar>
+                      <v-icon
+                        v-if="selectedCharacterIds.includes(character.characterId)"
+                        color="primary"
+                        size="24"
+                      >
+                        mdi-check-circle
+                      </v-icon>
+                    </div>
+                    <h4 class="font-bold mb-2">{{ character.name }}</h4>
+                    <p class="text-xs text-slate-500 leading-relaxed">
+                      {{ typeof character.personality === 'string' ? character.personality.substring(0, 60) : '暂无描述' }}
                     </p>
                   </v-card-text>
                 </v-card>
@@ -337,98 +320,8 @@ const getStepStatus = (step: number) => {
             </div>
           </div>
 
-          <!-- 步骤 3: 参数配置 -->
+          <!-- 步骤 3: 审核确认 -->
           <div v-if="currentStep === 3" class="space-y-6">
-            <div class="text-center mb-8">
-              <h1 class="text-3xl font-bold mb-2">参数设置</h1>
-              <p class="text-slate-600">调整模型参数以优化输出质量</p>
-            </div>
-
-            <div class="space-y-6">
-              <div>
-                <div class="flex items-center justify-between mb-2">
-                  <label class="text-sm font-semibold">Temperature</label>
-                  <span class="text-sm text-slate-500">{{ parameters.temperature }}</span>
-                </div>
-                <v-slider
-                  v-model="parameters.temperature"
-                  :min="0"
-                  :max="2"
-                  :step="0.1"
-                  color="primary"
-                  thumb-label
-                />
-                <p class="text-xs text-slate-500">控制输出的随机性。较高的值会产生更多样化的输出。</p>
-              </div>
-
-              <div>
-                <div class="flex items-center justify-between mb-2">
-                  <label class="text-sm font-semibold">Max Tokens</label>
-                  <span class="text-sm text-slate-500">{{ parameters.maxTokens }}</span>
-                </div>
-                <v-slider
-                  v-model="parameters.maxTokens"
-                  :min="100"
-                  :max="4000"
-                  :step="100"
-                  color="primary"
-                  thumb-label
-                />
-                <p class="text-xs text-slate-500">生成的最大令牌数。</p>
-              </div>
-
-              <div>
-                <div class="flex items-center justify-between mb-2">
-                  <label class="text-sm font-semibold">Top P</label>
-                  <span class="text-sm text-slate-500">{{ parameters.topP }}</span>
-                </div>
-                <v-slider
-                  v-model="parameters.topP"
-                  :min="0"
-                  :max="1"
-                  :step="0.1"
-                  color="primary"
-                  thumb-label
-                />
-                <p class="text-xs text-slate-500">核采样参数。较低的值会产生更集中的输出。</p>
-              </div>
-
-              <div>
-                <div class="flex items-center justify-between mb-2">
-                  <label class="text-sm font-semibold">Frequency Penalty</label>
-                  <span class="text-sm text-slate-500">{{ parameters.frequencyPenalty }}</span>
-                </div>
-                <v-slider
-                  v-model="parameters.frequencyPenalty"
-                  :min="0"
-                  :max="2"
-                  :step="0.1"
-                  color="primary"
-                  thumb-label
-                />
-                <p class="text-xs text-slate-500">降低重复相同词语的可能性。</p>
-              </div>
-
-              <div>
-                <div class="flex items-center justify-between mb-2">
-                  <label class="text-sm font-semibold">Presence Penalty</label>
-                  <span class="text-sm text-slate-500">{{ parameters.presencePenalty }}</span>
-                </div>
-                <v-slider
-                  v-model="parameters.presencePenalty"
-                  :min="0"
-                  :max="2"
-                  :step="0.1"
-                  color="primary"
-                  thumb-label
-                />
-                <p class="text-xs text-slate-500">增加讨论新主题的可能性。</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- 步骤 4: 审核确认 -->
-          <div v-if="currentStep === 4" class="space-y-6">
             <div class="text-center mb-8">
               <h1 class="text-3xl font-bold mb-2">审核确认</h1>
               <p class="text-slate-600">请检查您的配置并确认创建会话</p>
@@ -447,23 +340,23 @@ const getStepStatus = (step: number) => {
                 </div>
                 <v-divider />
                 <div class="flex justify-between">
-                  <span class="text-slate-600">配置模板：</span>
-                  <span class="font-semibold">
-                    {{ templates.find(t => t.id === selectedTemplate)?.name || '自定义' }}
-                  </span>
+                  <span class="text-slate-600">选择的场景：</span>
+                  <span class="font-semibold">{{ selectedScene?.name || '未选择' }}</span>
                 </div>
                 <v-divider />
                 <div class="flex justify-between">
-                  <span class="text-slate-600">Temperature：</span>
-                  <span class="font-semibold">{{ parameters.temperature }}</span>
+                  <span class="text-slate-600">选择的角色：</span>
+                  <span class="font-semibold">{{ selectedCharacters.length }} 个</span>
                 </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-600">Max Tokens：</span>
-                  <span class="font-semibold">{{ parameters.maxTokens }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-600">Top P：</span>
-                  <span class="font-semibold">{{ parameters.topP }}</span>
+                <div v-if="selectedCharacters.length > 0" class="pl-4">
+                  <v-chip
+                    v-for="char in selectedCharacters"
+                    :key="char.characterId"
+                    size="small"
+                    class="mr-2 mb-2"
+                  >
+                    {{ char.name }}
+                  </v-chip>
                 </div>
               </div>
             </v-card>
@@ -472,7 +365,11 @@ const getStepStatus = (step: number) => {
               <template #prepend>
                 <v-icon>mdi-information</v-icon>
               </template>
-              创建会话后，您可以随时在设置中修改这些参数。
+              创建会话后，您可以开始剧情推进和快照管理。
+            </v-alert>
+
+            <v-alert v-if="error" type="error" variant="tonal">
+              {{ error }}
             </v-alert>
           </div>
 
@@ -542,8 +439,8 @@ const getStepStatus = (step: number) => {
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
 
-.grid-cols-4 {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 @media (min-width: 768px) {

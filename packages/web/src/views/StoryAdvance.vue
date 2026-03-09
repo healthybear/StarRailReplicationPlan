@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { sessionApi, storyApi, snapshotApi } from '@/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -8,9 +9,11 @@ const sessionId = computed(() => route.params.sessionId as string);
 
 // 会话信息
 const sessionInfo = ref({
-  name: 'AI Workflow #123',
-  lastUpdate: '2023年10月24日 14:30',
+  name: '',
+  lastUpdate: '',
 });
+const loading = ref(false);
+const error = ref<string>('');
 
 // 对话历史
 interface Message {
@@ -22,33 +25,40 @@ interface Message {
   avatar?: string;
 }
 
-const messages = ref<Message[]>([
-  {
-    id: '1',
-    type: 'ai',
-    sender: 'AI Assistant',
-    content: '您好！我是您的 AI 工作流助手。我已经为您准备好了关于 Data Processing Task 的最新分析报告。您可以选择查看摘要，或者直接加载相关的系统快照来继续操作。',
-    timestamp: '10:42 AM',
-  },
-  {
-    id: '2',
-    type: 'user',
-    sender: 'Administrator',
-    content: '请显示最后一次数据处理任务的快照详情，并帮我对比一下今天的执行效率与昨天的差异。',
-    timestamp: '10:45 AM',
-  },
-  {
-    id: '3',
-    type: 'ai',
-    sender: 'AI Assistant',
-    content: '明白。我已检索到最近的快照信息。效率分析：处理时长减少了 12% (今日 42s vs 昨日 48s)，错误率维持在 0.01%，吞吐量提高了 8,500 ops/sec。',
-    timestamp: '10:46 AM',
-  },
-]);
+const messages = ref<Message[]>([]);
 
 // 用户输入
 const userInput = ref('');
 const isProcessing = ref(false);
+
+// 加载会话信息
+const loadSession = async () => {
+  try {
+    loading.value = true;
+    error.value = '';
+    const session = await sessionApi.getById(sessionId.value);
+    sessionInfo.value = {
+      name: session.sessionName,
+      lastUpdate: new Date(session.updatedAt || session.createdAt).toLocaleString('zh-CN'),
+    };
+
+    // 添加欢迎消息
+    if (messages.value.length === 0) {
+      messages.value.push({
+        id: '1',
+        type: 'ai',
+        sender: 'AI Assistant',
+        content: `欢迎来到会话「${session.sessionName}」！您可以开始输入指令来推进剧情。`,
+        timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+      });
+    }
+  } catch (e: any) {
+    error.value = `加载会话失败: ${e.message}`;
+    console.error('Failed to load session:', e);
+  } finally {
+    loading.value = false;
+  }
+};
 
 // 发送消息
 const sendMessage = async () => {
@@ -57,37 +67,82 @@ const sendMessage = async () => {
   const newMessage: Message = {
     id: Date.now().toString(),
     type: 'user',
-    sender: 'Administrator',
+    sender: 'User',
     content: userInput.value,
     timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
   };
 
   messages.value.push(newMessage);
+  const input = userInput.value;
   userInput.value = '';
   isProcessing.value = true;
 
-  // TODO: 调用后端 API
-  setTimeout(() => {
+  try {
+    // 调用剧情推进 API
+    const result = await storyApi.advance({
+      sessionId: sessionId.value,
+      userInput: input,
+      characterId: '', // TODO: 从会话中获取当前角色
+      sceneId: '', // TODO: 从会话中获取当前场景
+    });
+
+    // 添加 AI 响应
     messages.value.push({
       id: (Date.now() + 1).toString(),
       type: 'ai',
       sender: 'AI Assistant',
-      content: '收到您的消息，正在处理中...',
+      content: result.response || '剧情推进成功',
       timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
     });
+
+    // 刷新会话信息
+    await loadSession();
+  } catch (e: any) {
+    error.value = `剧情推进失败: ${e.message}`;
+    console.error('Failed to advance story:', e);
+
+    // 添加错误消息
+    messages.value.push({
+      id: (Date.now() + 1).toString(),
+      type: 'ai',
+      sender: 'System',
+      content: `错误: ${e.message}`,
+      timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+    });
+  } finally {
     isProcessing.value = false;
-  }, 1000);
+  }
 };
 
 // 快捷操作
-const handleSnapshot = () => {
-  // TODO: 调用后端 API 创建快照
-  console.log('创建快照');
+const handleSnapshot = async () => {
+  try {
+    await snapshotApi.create(sessionId.value, {
+      name: `快照 ${new Date().toLocaleString('zh-CN')}`,
+      description: '手动创建的快照',
+    });
+
+    // 添加成功消息
+    messages.value.push({
+      id: Date.now().toString(),
+      type: 'ai',
+      sender: 'System',
+      content: '快照创建成功！',
+      timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+    });
+  } catch (e: any) {
+    error.value = `创建快照失败: ${e.message}`;
+    console.error('Failed to create snapshot:', e);
+  }
 };
 
 const handleLoadSnapshot = () => {
   router.push({ name: 'SnapshotList', params: { sessionId: sessionId.value } });
 };
+
+onMounted(() => {
+  loadSession();
+});
 </script>
 
 <template>
