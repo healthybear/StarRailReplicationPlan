@@ -8,6 +8,7 @@ import { StoryModule } from './modules/story/story.module';
 import { SnapshotModule } from './modules/snapshot/snapshot.module';
 import { CharacterModule } from './modules/character/character.module';
 import { SceneModule } from './modules/scene/scene.module';
+import { AnchorModule } from './modules/anchor/anchor.module';
 import { CoreModule } from './common/modules/core.module';
 
 @Module({
@@ -23,6 +24,7 @@ import { CoreModule } from './common/modules/core.module';
     SnapshotModule,
     CharacterModule,
     SceneModule,
+    AnchorModule,
   ],
   controllers: [AppController],
   providers: [AppService],
