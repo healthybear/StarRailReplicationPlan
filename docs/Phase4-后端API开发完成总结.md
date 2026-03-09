@@ -121,6 +121,36 @@
   - 支持创建、查看、删除场景
 - **状态**：✅ 已完成
 
+#### CreateSession.vue
+
+- **功能**：
+  - 3 步创建流程（基本信息 → 选择场景和角色 → 审核确认）
+  - 从 API 加载场景和角色列表
+  - 支持多选角色
+  - 调用 sessionApi.create() 创建会话
+  - 错误处理和加载状态
+- **状态**：✅ 已完成
+
+#### StoryAdvance.vue
+
+- **功能**：
+  - 从 API 加载会话信息
+  - 实时剧情推进（调用 storyApi.advance()）
+  - 创建快照（调用 snapshotApi.create()）
+  - 对话历史展示
+  - 错误处理和加载状态
+- **状态**：✅ 已完成
+
+#### SnapshotList.vue
+
+- **功能**：
+  - 从 API 加载快照列表
+  - 删除快照（调用 snapshotApi.delete()）
+  - 恢复快照（调用 snapshotApi.restore()）
+  - 冲突策略选择（合并/覆盖/重命名/跳过）
+  - 错误处理和加载状态
+- **状态**：✅ 已完成
+
 ## 三、技术架构
 
 ### 3.1 DI 容器桥接
@@ -295,11 +325,8 @@ POST   /api/anchors/compare                    # 锚点对比
    - Export-Import 模块（导出导入）
 
 2. **前端页面**：
-   - CreateSession.vue（创建会话）
-   - StoryAdvance.vue（剧情推进）
-   - SnapshotList.vue（快照管理）
    - AnchorList.vue（锚点对比）
-   - 其他详情页面
+   - 其他详情页面（CharacterDetail、SceneDetail 等）
 
 3. **高级功能**：
    - 实时通信（WebSocket）
@@ -315,11 +342,6 @@ POST   /api/anchors/compare                    # 锚点对比
    - 在浏览器中测试完整流程
    - 验证所有 CRUD 操作
    - 记录测试结果
-
-2. **完善前端集成**
-   - 更新 CreateSession.vue
-   - 更新 StoryAdvance.vue
-   - 更新 SnapshotList.vue
 
 ### 8.2 优先级 P1（建议完成）
 
@@ -348,18 +370,27 @@ POST   /api/anchors/compare                    # 锚点对比
 - ✅ 所有 MVP 模块的 API 端点可正常调用
 - ✅ 前端能够通过 API 创建会话、推进剧情、管理快照
 - ✅ 单元测试覆盖率达到 60%
+- ✅ 前端核心页面集成完成（6 个页面）
 - ⏳ E2E 测试覆盖核心流程（待完成）
 - ⏳ API 文档完整（Swagger）（待完成）
 
 ### 9.2 技术指标
 
-- **代码行数**：约 3000 行（后端 + 前端）
+- **代码行数**：约 4000 行（后端 + 前端）
 - **测试覆盖率**：100%（单元测试）
 - **API 响应时间**：< 100ms（本地测试）
 - **构建时间**：< 30s
+- **前端页面**：6 个核心页面完成 API 集成
 
 ## 十、总结
 
-Phase 4 后端 API 开发 MVP 已完成，实现了 6 个核心模块的 REST API，并完成了前端 API 客户端层和 3 个核心列表页面的集成。项目已具备基本的前后端交互能力，可以进行端到端测试和功能验证。
+Phase 4 后端 API 开发与前端集成已完成，实现了 6 个核心模块的 REST API，并完成了前端 API 客户端层和 6 个核心页面的集成。项目已具备完整的前后端交互能力，可以进行端到端测试和功能验证。
 
-下一步将重点完善前端集成，实现完整的用户流程，并添加 API 文档和数据持久化功能。
+**主要成果**：
+
+- 6 个后端 API 模块（Session、Story、Snapshot、Character、Scene、Anchor）
+- 前端 API 客户端层（axios + 6 个服务模块）
+- 6 个 Vue 页面完成 API 集成（SessionList、CharacterList、SceneList、CreateSession、StoryAdvance、SnapshotList）
+- 44 个单元测试全部通过
+
+下一步将重点进行端到端测试，验证完整的用户流程，并添加 API 文档和数据持久化功能。

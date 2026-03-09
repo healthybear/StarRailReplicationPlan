@@ -66,7 +66,10 @@
 - `SessionList.vue`：使用 sessionApi 加载会话列表，支持创建/删除操作
 - `CharacterList.vue`：使用 characterApi 加载人物列表，支持创建/删除操作
 - `SceneList.vue`：使用 sceneApi 加载场景列表，支持创建/删除操作
-- 所有列表页面添加错误处理和加载状态
+- `CreateSession.vue`：简化为 3 步流程，集成场景和角色选择 API
+- `StoryAdvance.vue`：集成会话加载、剧情推进、快照创建 API
+- `SnapshotList.vue`：集成快照列表、删除、恢复 API
+- 所有页面添加错误处理和加载状态
 
 #### 修复
 
