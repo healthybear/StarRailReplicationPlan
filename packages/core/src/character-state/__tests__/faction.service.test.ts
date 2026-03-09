@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { FactionService } from '../faction.service.js';
 import type { Faction, FactionConfig } from '@star-rail/types';
 
