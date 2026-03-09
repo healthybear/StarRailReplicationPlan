@@ -81,6 +81,11 @@
       </v-col>
     </v-row>
 
+    <!-- Error Alert -->
+    <v-alert v-if="error" type="error" class="mb-4" closable @click:close="error = ''">
+      {{ error }}
+    </v-alert>
+
     <!-- Sessions Table -->
     <v-card>
       <v-data-table
@@ -177,8 +182,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { sessionApi, type Session } from '@/api';
 
 const router = useRouter();
 
@@ -189,12 +195,12 @@ const breadcrumbs = [
 ];
 
 // Stats
-const stats = ref({
-  total: 24,
-  active: 3,
+const stats = computed(() => ({
+  total: sessions.value.length,
+  active: sessions.value.filter(s => s.status === 'active').length,
   storage: '1.2 GB',
   credits: '84%',
-});
+}));
 
 // Table headers
 const headers = [
@@ -205,45 +211,40 @@ const headers = [
 ];
 
 // Sessions data
-const sessions = ref([
-  {
-    id: '1',
-    name: '雅利洛-VI 初遇',
-    status: 'active',
-    updatedAt: '2 小时前',
-    icon: 'mdi-account-voice',
-    iconColor: 'primary',
-  },
-  {
-    id: '2',
-    name: '仙舟罗浮探索',
-    status: 'idle',
-    updatedAt: '5 小时前',
-    icon: 'mdi-file-document',
-    iconColor: 'orange',
-  },
-  {
-    id: '3',
-    name: '黑塔空间站',
-    status: 'running',
-    updatedAt: '昨天',
-    icon: 'mdi-hub',
-    iconColor: 'purple',
-  },
-  {
-    id: '4',
-    name: '匹诺康尼梦境',
-    status: 'active',
-    updatedAt: '3 天前',
-    icon: 'mdi-chart-line',
-    iconColor: 'blue',
-  },
-]);
+interface SessionDisplay extends Session {
+  icon: string;
+  iconColor: string;
+  status: 'active' | 'idle' | 'running';
+}
 
+const sessions = ref<SessionDisplay[]>([]);
 const loading = ref(false);
 const page = ref(1);
 const itemsPerPage = ref(10);
 const totalItems = computed(() => sessions.value.length);
+const error = ref<string>('');
+
+// Load sessions from API
+const loadSessions = async () => {
+  try {
+    loading.value = true;
+    error.value = '';
+    const data = await sessionApi.getAll();
+    sessions.value = data.map((session, index) => ({
+      ...session,
+      name: session.sessionName,
+      icon: ['mdi-account-voice', 'mdi-file-document', 'mdi-hub', 'mdi-chart-line'][index % 4],
+      iconColor: ['primary', 'orange', 'purple', 'blue'][index % 4],
+      status: 'active' as const,
+      updatedAt: new Date(session.createdAt).toLocaleString('zh-CN'),
+    }));
+  } catch (e: any) {
+    error.value = `加载会话列表失败: ${e.message}`;
+    console.error('Failed to load sessions:', e);
+  } finally {
+    loading.value = false;
+  }
+};
 
 // Methods
 const getStatusColor = (status: string) => {
@@ -268,17 +269,30 @@ const createSession = () => {
   router.push({ name: 'CreateSession' });
 };
 
-const enterSession = (item: any) => {
-  router.push({ name: 'StoryAdvance', params: { sessionId: item.id } });
+const enterSession = (item: SessionDisplay) => {
+  router.push({ name: 'StoryAdvance', params: { sessionId: item.sessionId } });
 };
 
-const editSession = (item: any) => {
+const editSession = (item: SessionDisplay) => {
   console.log('编辑会话', item);
 };
 
-const deleteSession = (item: any) => {
-  console.log('删除会话', item);
+const deleteSession = async (item: SessionDisplay) => {
+  if (!confirm(`确定要删除会话"${item.name}"吗？`)) {
+    return;
+  }
+  try {
+    await sessionApi.delete(item.sessionId);
+    await loadSessions();
+  } catch (e: any) {
+    error.value = `删除会话失败: ${e.message}`;
+    console.error('Failed to delete session:', e);
+  }
 };
+
+onMounted(() => {
+  loadSessions();
+});
 </script>
 
 <style scoped lang="scss">

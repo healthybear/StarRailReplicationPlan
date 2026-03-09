@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { characterApi, type Character } from '@/api';
 
 const router = useRouter();
 
@@ -9,144 +10,42 @@ const searchQuery = ref('');
 const selectedFaction = ref('all');
 
 // 人物数据
-interface Character {
-  id: string;
-  name: string;
-  faction: string;
-  description: string;
-  avatar?: string;
-  personality: {
-    openness: number;
-    conscientiousness: number;
-    extraversion: number;
-    agreeableness: number;
-    neuroticism: number;
-  };
-  abilities: {
-    combat: number;
-    social: number;
-    investigation: number;
-  };
-  status: 'active' | 'draft' | 'archived';
-  updatedAt: string;
-}
+const characters = ref<Character[]>([]);
+const loading = ref(false);
+const error = ref<string>('');
 
-const characters = ref<Character[]>([
-  {
-    id: 'march7',
-    name: '三月七',
-    faction: '星穹列车',
-    description: '星穹列车的成员，被发现时冰封在一块永恒冰中，失去了所有记忆。性格开朗活泼，喜欢拍照记录生活。',
-    personality: {
-      openness: 0.8,
-      conscientiousness: 0.6,
-      extraversion: 0.85,
-      agreeableness: 0.75,
-      neuroticism: 0.35,
-    },
-    abilities: {
-      combat: 65,
-      social: 80,
-      investigation: 60,
-    },
-    status: 'active',
-    updatedAt: '2 小时前',
-  },
-  {
-    id: 'stelle',
-    name: '星',
-    faction: '星穹列车',
-    description: '开拓者，被植入了星核的特殊存在。拥有强大的力量，正在寻找自己的过去。',
-    personality: {
-      openness: 0.7,
-      conscientiousness: 0.75,
-      extraversion: 0.6,
-      agreeableness: 0.7,
-      neuroticism: 0.4,
-    },
-    abilities: {
-      combat: 85,
-      social: 65,
-      investigation: 70,
-    },
-    status: 'active',
-    updatedAt: '5 小时前',
-  },
-  {
-    id: 'danheng',
-    name: '丹恒',
-    faction: '星穹列车',
-    description: '星穹列车的守卫，沉默寡言但可靠。似乎隐藏着某些秘密。',
-    personality: {
-      openness: 0.5,
-      conscientiousness: 0.85,
-      extraversion: 0.3,
-      agreeableness: 0.6,
-      neuroticism: 0.45,
-    },
-    abilities: {
-      combat: 90,
-      social: 45,
-      investigation: 75,
-    },
-    status: 'active',
-    updatedAt: '昨天',
-  },
-  {
-    id: 'bronya',
-    name: '布洛妮娅',
-    faction: '贝洛伯格',
-    description: '贝洛伯格的大守护者继承人，冷静理智，肩负着城市的未来。',
-    personality: {
-      openness: 0.65,
-      conscientiousness: 0.9,
-      extraversion: 0.5,
-      agreeableness: 0.65,
-      neuroticism: 0.35,
-    },
-    abilities: {
-      combat: 80,
-      social: 75,
-      investigation: 80,
-    },
-    status: 'active',
-    updatedAt: '3 天前',
-  },
-  {
-    id: 'seele',
-    name: '希儿',
-    faction: '地火',
-    description: '地下城的战士，勇敢而坚强，为了保护下层区的人们而战斗。',
-    personality: {
-      openness: 0.6,
-      conscientiousness: 0.7,
-      extraversion: 0.55,
-      agreeableness: 0.7,
-      neuroticism: 0.5,
-    },
-    abilities: {
-      combat: 88,
-      social: 60,
-      investigation: 65,
-    },
-    status: 'draft',
-    updatedAt: '1 周前',
-  },
-]);
+// Load characters from API
+const loadCharacters = async () => {
+  try {
+    loading.value = true;
+    error.value = '';
+    const data = await characterApi.getAll();
+    characters.value = data;
+  } catch (e: any) {
+    error.value = `加载人物列表失败: ${e.message}`;
+    console.error('Failed to load characters:', e);
+  } finally {
+    loading.value = false;
+  }
+};
 
 // 势力列表
 const allFactions = computed(() => {
   const factions = new Set<string>();
-  characters.value.forEach(char => factions.add(char.faction));
+  characters.value.forEach(char => {
+    if (char.metadata?.faction) {
+      factions.add(char.metadata.faction as string);
+    }
+  });
   return ['all', ...Array.from(factions)];
 });
 
 // 筛选后的人物
 const filteredCharacters = computed(() => {
   return characters.value.filter(char => {
-    const matchesSearch = char.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                         char.description.toLowerCase().includes(searchQuery.value.toLowerCase());
-    const matchesFaction = selectedFaction.value === 'all' || char.faction === selectedFaction.value;
+    const matchesSearch = char.name.toLowerCase().includes(searchQuery.value.toLowerCase());
+    const matchesFaction = selectedFaction.value === 'all' ||
+                          char.metadata?.faction === selectedFaction.value;
     return matchesSearch && matchesFaction;
   });
 });
@@ -154,14 +53,14 @@ const filteredCharacters = computed(() => {
 // 统计数据
 const stats = computed(() => ({
   total: characters.value.length,
-  active: characters.value.filter(c => c.status === 'active').length,
-  draft: characters.value.filter(c => c.status === 'draft').length,
-  factions: new Set(characters.value.map(c => c.faction)).size,
+  active: characters.value.length,
+  draft: 0,
+  factions: allFactions.value.length - 1,
 }));
 
 // 方法
 const viewCharacter = (character: Character) => {
-  router.push({ name: 'CharacterDetail', params: { characterId: character.id } });
+  router.push({ name: 'CharacterDetail', params: { characterId: character.characterId } });
 };
 
 const createCharacter = () => {
@@ -169,11 +68,20 @@ const createCharacter = () => {
 };
 
 const editCharacter = (character: Character) => {
-  router.push({ name: 'CharacterDetail', params: { characterId: character.id }, query: { mode: 'edit' } });
+  router.push({ name: 'CharacterDetail', params: { characterId: character.characterId }, query: { mode: 'edit' } });
 };
 
-const deleteCharacter = (character: Character) => {
-  console.log('删除人物', character);
+const deleteCharacter = async (character: Character) => {
+  if (!confirm(`确定要删除人物"${character.name}"吗？`)) {
+    return;
+  }
+  try {
+    await characterApi.delete(character.characterId);
+    await loadCharacters();
+  } catch (e: any) {
+    error.value = `删除人物失败: ${e.message}`;
+    console.error('Failed to delete character:', e);
+  }
 };
 
 const getStatusColor = (status: string) => {
@@ -199,6 +107,29 @@ const getPersonalityColor = (value: number) => {
   if (value >= 0.4) return 'warning';
   return 'error';
 };
+
+// Helper function to get personality trait value
+const getPersonalityTrait = (character: Character, trait: string): number => {
+  if (typeof character.personality === 'object' && character.personality !== null) {
+    return (character.personality as any)[trait] || 0;
+  }
+  return 0;
+};
+
+// Helper function to get ability value
+const getAbility = (character: Character, ability: string): number => {
+  if (character.initialState && typeof character.initialState === 'object') {
+    const abilities = (character.initialState as any).abilities;
+    if (abilities && typeof abilities === 'object') {
+      return abilities[ability] || 0;
+    }
+  }
+  return 0;
+};
+
+onMounted(() => {
+  loadCharacters();
+});
 </script>
 
 <template>
@@ -234,6 +165,14 @@ const getPersonalityColor = (value: number) => {
 
   <!-- Content Area -->
   <div class="pa-8 bg-grey-lighten-5">
+    <!-- Error Alert -->
+    <v-alert v-if="error" type="error" class="mb-4" closable @click:close="error = ''">
+      {{ error }}
+    </v-alert>
+
+    <!-- Loading State -->
+    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
+
     <!-- Stats Overview -->
     <v-row class="mb-8">
       <v-col cols="12" md="3">
@@ -332,10 +271,10 @@ const getPersonalityColor = (value: number) => {
                 <v-icon size="48" color="primary">mdi-account</v-icon>
               </v-avatar>
               <v-chip
-                :color="getStatusColor(character.status)"
+                :color="getStatusColor('active')"
                 size="small"
               >
-                {{ getStatusText(character.status) }}
+                {{ getStatusText('active') }}
               </v-chip>
             </div>
           </div>
@@ -346,13 +285,13 @@ const getPersonalityColor = (value: number) => {
 
           <v-card-subtitle class="text-sm">
             <v-chip size="x-small" variant="tonal" color="primary" class="mr-2">
-              {{ character.faction }}
+              {{ character.metadata?.faction || '未知势力' }}
             </v-chip>
           </v-card-subtitle>
 
           <v-card-text>
             <p class="text-sm text-grey-darken-1 mb-4">
-              {{ character.description.substring(0, 80) }}{{ character.description.length > 80 ? '...' : '' }}
+              {{ typeof character.personality === 'string' ? character.personality.substring(0, 80) : '暂无描述' }}
             </p>
 
             <!-- Personality Traits -->
@@ -362,22 +301,22 @@ const getPersonalityColor = (value: number) => {
                 <div>
                   <div class="flex justify-between text-xs mb-1">
                     <span>外向性</span>
-                    <span>{{ Math.round(character.personality.extraversion * 100) }}%</span>
+                    <span>{{ Math.round(getPersonalityTrait(character, 'extraversion') * 100) }}%</span>
                   </div>
                   <v-progress-linear
-                    :model-value="character.personality.extraversion * 100"
-                    :color="getPersonalityColor(character.personality.extraversion)"
+                    :model-value="getPersonalityTrait(character, 'extraversion') * 100"
+                    :color="getPersonalityColor(getPersonalityTrait(character, 'extraversion'))"
                     height="4"
                   />
                 </div>
                 <div>
                   <div class="flex justify-between text-xs mb-1">
                     <span>宜人性</span>
-                    <span>{{ Math.round(character.personality.agreeableness * 100) }}%</span>
+                    <span>{{ Math.round(getPersonalityTrait(character, 'agreeableness') * 100) }}%</span>
                   </div>
                   <v-progress-linear
-                    :model-value="character.personality.agreeableness * 100"
-                    :color="getPersonalityColor(character.personality.agreeableness)"
+                    :model-value="getPersonalityTrait(character, 'agreeableness') * 100"
+                    :color="getPersonalityColor(getPersonalityTrait(character, 'agreeableness'))"
                     height="4"
                   />
                 </div>
@@ -390,17 +329,17 @@ const getPersonalityColor = (value: number) => {
               <div class="grid grid-cols-3 gap-2 text-center">
                 <div>
                   <v-icon size="20" color="error">mdi-sword-cross</v-icon>
-                  <p class="text-xs font-bold">{{ character.abilities.combat }}</p>
+                  <p class="text-xs font-bold">{{ getAbility(character, 'combat') }}</p>
                   <p class="text-xs text-grey-darken-1">战斗</p>
                 </div>
                 <div>
                   <v-icon size="20" color="success">mdi-account-group</v-icon>
-                  <p class="text-xs font-bold">{{ character.abilities.social }}</p>
+                  <p class="text-xs font-bold">{{ getAbility(character, 'social') }}</p>
                   <p class="text-xs text-grey-darken-1">社交</p>
                 </div>
                 <div>
                   <v-icon size="20" color="info">mdi-magnify</v-icon>
-                  <p class="text-xs font-bold">{{ character.abilities.investigation }}</p>
+                  <p class="text-xs font-bold">{{ getAbility(character, 'investigation') }}</p>
                   <p class="text-xs text-grey-darken-1">调查</p>
                 </div>
               </div>

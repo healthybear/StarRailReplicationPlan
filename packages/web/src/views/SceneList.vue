@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { sceneApi, type Scene } from '@/api';
 
 const router = useRouter();
 
@@ -9,82 +10,32 @@ const searchQuery = ref('');
 const selectedTag = ref('all');
 
 // 场景数据
-interface Scene {
-  id: string;
-  name: string;
-  description: string;
-  thumbnail?: string;
-  tags: string[];
-  weather: string;
-  temperature: number;
-  connectedScenes: number;
-  status: 'active' | 'draft' | 'archived';
-  updatedAt: string;
-}
+const scenes = ref<Scene[]>([]);
+const loading = ref(false);
+const error = ref<string>('');
 
-const scenes = ref<Scene[]>([
-  {
-    id: 'belobog_plaza',
-    name: '贝洛伯格中央广场',
-    description: '贝洛伯格的中央广场，是城市的核心区域。广场中央矗立着一座巨大的雕像，周围是繁忙的商业区和行政区。',
-    tags: ['公共区域', '贝洛伯格', '主城区'],
-    weather: '下雪',
-    temperature: -15,
-    connectedScenes: 3,
-    status: 'active',
-    updatedAt: '2 小时前',
-  },
-  {
-    id: 'belobog_admin',
-    name: '贝洛伯格行政区',
-    description: '城市的行政中心，大守护者办公的地方。建筑宏伟庄严，守卫森严。',
-    tags: ['行政区', '贝洛伯格', '重要区域'],
-    weather: '下雪',
-    temperature: -15,
-    connectedScenes: 2,
-    status: 'active',
-    updatedAt: '5 小时前',
-  },
-  {
-    id: 'xianzhou_luofu',
-    name: '仙舟罗浮 - 星槎海中枢',
-    description: '仙舟罗浮的中央枢纽，连接着各个重要区域。这里是仙舟的交通要道。',
-    tags: ['仙舟', '罗浮', '交通枢纽'],
-    weather: '晴朗',
-    temperature: 22,
-    connectedScenes: 5,
-    status: 'active',
-    updatedAt: '昨天',
-  },
-  {
-    id: 'herta_station',
-    name: '黑塔空间站 - 主控舱段',
-    description: '黑塔空间站的主控制区域，充满了先进的科技设备和全息投影。',
-    tags: ['空间站', '黑塔', '科技区'],
-    weather: '室内',
-    temperature: 20,
-    connectedScenes: 4,
-    status: 'active',
-    updatedAt: '3 天前',
-  },
-  {
-    id: 'penacony_dream',
-    name: '匹诺康尼 - 黄金时刻',
-    description: '匹诺康尼的梦境世界，充满了奢华和迷幻的氛围。',
-    tags: ['匹诺康尼', '梦境', '娱乐区'],
-    weather: '梦境',
-    temperature: 25,
-    connectedScenes: 6,
-    status: 'draft',
-    updatedAt: '1 周前',
-  },
-]);
+// Load scenes from API
+const loadScenes = async () => {
+  try {
+    loading.value = true;
+    error.value = '';
+    const data = await sceneApi.getAll();
+    scenes.value = data;
+  } catch (e: any) {
+    error.value = `加载场景列表失败: ${e.message}`;
+    console.error('Failed to load scenes:', e);
+  } finally {
+    loading.value = false;
+  }
+};
 
 // 标签列表
 const allTags = computed(() => {
   const tags = new Set<string>();
   scenes.value.forEach(scene => {
-    scene.tags.forEach(tag => tags.add(tag));
+    if (scene.metadata?.tags && Array.isArray(scene.metadata.tags)) {
+      (scene.metadata.tags as string[]).forEach(tag => tags.add(tag));
+    }
   });
   return ['all', ...Array.from(tags)];
 });
@@ -94,7 +45,9 @@ const filteredScenes = computed(() => {
   return scenes.value.filter(scene => {
     const matchesSearch = scene.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
                          scene.description.toLowerCase().includes(searchQuery.value.toLowerCase());
-    const matchesTag = selectedTag.value === 'all' || scene.tags.includes(selectedTag.value);
+    const matchesTag = selectedTag.value === 'all' ||
+                      (scene.metadata?.tags && Array.isArray(scene.metadata.tags) &&
+                       (scene.metadata.tags as string[]).includes(selectedTag.value));
     return matchesSearch && matchesTag;
   });
 });
@@ -102,14 +55,14 @@ const filteredScenes = computed(() => {
 // 统计数据
 const stats = computed(() => ({
   total: scenes.value.length,
-  active: scenes.value.filter(s => s.status === 'active').length,
-  draft: scenes.value.filter(s => s.status === 'draft').length,
-  archived: scenes.value.filter(s => s.status === 'archived').length,
+  active: scenes.value.length,
+  draft: 0,
+  archived: 0,
 }));
 
 // 方法
 const viewScene = (scene: Scene) => {
-  router.push({ name: 'SceneDetail', params: { sceneId: scene.id } });
+  router.push({ name: 'SceneDetail', params: { sceneId: scene.sceneId } });
 };
 
 const createScene = () => {
@@ -117,11 +70,20 @@ const createScene = () => {
 };
 
 const editScene = (scene: Scene) => {
-  router.push({ name: 'SceneDetail', params: { sceneId: scene.id }, query: { mode: 'edit' } });
+  router.push({ name: 'SceneDetail', params: { sceneId: scene.sceneId }, query: { mode: 'edit' } });
 };
 
-const deleteScene = (scene: Scene) => {
-  console.log('删除场景', scene);
+const deleteScene = async (scene: Scene) => {
+  if (!confirm(`确定要删除场景"${scene.name}"吗？`)) {
+    return;
+  }
+  try {
+    await sceneApi.delete(scene.sceneId);
+    await loadScenes();
+  } catch (e: any) {
+    error.value = `删除场景失败: ${e.message}`;
+    console.error('Failed to delete scene:', e);
+  }
 };
 
 const getStatusColor = (status: string) => {
@@ -141,6 +103,47 @@ const getStatusText = (status: string) => {
   };
   return texts[status] || status;
 };
+
+// Helper functions to get environment data
+const getWeather = (scene: Scene): string => {
+  if (scene.environment && typeof scene.environment === 'object') {
+    return (scene.environment as any).weather || '未知';
+  }
+  return '未知';
+};
+
+const getTemperature = (scene: Scene): number => {
+  if (scene.environment && typeof scene.environment === 'object') {
+    return (scene.environment as any).temperature || 20;
+  }
+  return 20;
+};
+
+const getConnectedScenes = (scene: Scene): number => {
+  if (scene.metadata && typeof scene.metadata === 'object') {
+    const connected = (scene.metadata as any).connectedScenes;
+    return Array.isArray(connected) ? connected.length : 0;
+  }
+  return 0;
+};
+
+const getUpdatedAt = (scene: Scene): string => {
+  if (scene.updatedAt) {
+    return new Date(scene.updatedAt).toLocaleString('zh-CN');
+  }
+  return '未知';
+};
+
+const getTags = (scene: Scene): string[] => {
+  if (scene.metadata?.tags && Array.isArray(scene.metadata.tags)) {
+    return scene.metadata.tags as string[];
+  }
+  return [];
+};
+
+onMounted(() => {
+  loadScenes();
+});
 </script>
 
 <template>
@@ -197,6 +200,14 @@ const getStatusText = (status: string) => {
         <v-icon>mdi-chevron-right</v-icon>
       </template>
     </v-breadcrumbs>
+
+    <!-- Error Alert -->
+    <v-alert v-if="error" type="error" class="mb-4" closable @click:close="error = ''">
+      {{ error }}
+    </v-alert>
+
+    <!-- Loading State -->
+    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
     <!-- Stats Overview -->
     <v-row class="mb-8">
@@ -297,11 +308,11 @@ const getStatusText = (status: string) => {
               </v-icon>
             </div>
             <v-chip
-              :color="getStatusColor(scene.status)"
+              :color="getStatusColor('active')"
               size="small"
               class="absolute top-3 right-3"
             >
-              {{ getStatusText(scene.status) }}
+              {{ getStatusText('active') }}
             </v-chip>
           </div>
 
@@ -318,7 +329,7 @@ const getStatusText = (status: string) => {
               <!-- Tags -->
               <div class="flex flex-wrap gap-1">
                 <v-chip
-                  v-for="tag in scene.tags"
+                  v-for="tag in getTags(scene)"
                   :key="tag"
                   size="x-small"
                   variant="tonal"
@@ -332,19 +343,19 @@ const getStatusText = (status: string) => {
               <div class="grid grid-cols-2 gap-2 text-sm">
                 <div class="flex items-center gap-2">
                   <v-icon size="16" color="grey">mdi-weather-snowy</v-icon>
-                  <span class="text-grey-darken-1">{{ scene.weather }}</span>
+                  <span class="text-grey-darken-1">{{ getWeather(scene) }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <v-icon size="16" color="grey">mdi-thermometer</v-icon>
-                  <span class="text-grey-darken-1">{{ scene.temperature }}°C</span>
+                  <span class="text-grey-darken-1">{{ getTemperature(scene) }}°C</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <v-icon size="16" color="grey">mdi-map-marker-path</v-icon>
-                  <span class="text-grey-darken-1">{{ scene.connectedScenes }} 个连接</span>
+                  <span class="text-grey-darken-1">{{ getConnectedScenes(scene) }} 个连接</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <v-icon size="16" color="grey">mdi-clock-outline</v-icon>
-                  <span class="text-grey-darken-1">{{ scene.updatedAt }}</span>
+                  <span class="text-grey-darken-1">{{ getUpdatedAt(scene) }}</span>
                 </div>
               </div>
             </div>
