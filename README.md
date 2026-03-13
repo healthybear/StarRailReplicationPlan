@@ -2,20 +2,98 @@
 
 基于 LLM 的剧情模拟系统，用于复现和探索《崩坏：星穹铁道》的剧情分支。
 
-## Monorepo 工程介绍
+## 🎯 项目状态
 
-本项目采用 **pnpm workspace** 管理的 Monorepo 架构，将代码按职责分层组织为多个独立包，便于模块化开发、测试和维护。
+- **当前版本**: v4.0.0-rc.1
+- **开发阶段**: Phase 4 完成，MVP 可用
+- **测试覆盖**: 61 个测试（44 个单元测试 + 17 个 E2E 测试）
+- **API 端点**: 26 个 REST API
+- **前端页面**: 6 个核心页面
 
-### 为什么选择 Monorepo
+## ✨ 核心功能
 
-- **代码共享**：共享类型定义和工具函数，避免重复代码
-- **统一版本管理**：所有包使用统一的依赖版本，减少兼容性问题
-- **原子提交**：跨包修改可以在单次提交中完成
-- **简化依赖**：workspace 协议 (`workspace:*`) 自动链接本地包
+### 已实现功能（Phase 1-4）
 
----
+- ✅ **视野隔离系统** - 每个角色只能看到自己知道的信息
+- ✅ **人物状态演化** - 基于五大人格模型和触发表的状态变化
+- ✅ **LLM 驱动对话** - 支持 Deepseek 和 Claude API
+- ✅ **剧情推进编排** - 单角色/双角色/多角色剧情推进
+- ✅ **快照与读档** - 保存和恢复任意时间点的游戏状态
+- ✅ **锚点对比评估** - 对比当前分支与原剧情的差异
+- ✅ **导出导入系统** - 人物/场景配置的导出和复用
+- ✅ **REST API** - 完整的后端 API 支持
+- ✅ **Web 管理界面** - 基于 Vue 3 的可视化管理
+- ✅ **CLI 交互界面** - 命令行交互式游戏体验
+- ✅ **Swagger 文档** - 完整的 API 文档
 
-## 项目结构
+### 核心特性
+
+1. **视野隔离验证** - 角色 A 知道的信息不会泄露给角色 B
+2. **多维度状态管理** - 关系/能力/修养/性格/视野五个维度
+3. **触发表驱动** - 事件触发自动更新人物状态
+4. **分支对比评估** - 量化评估当前分支与原剧情的贴合度
+5. **主题一致性检查** - 评估剧情是否符合预设主题
+6. **性能监控** - 响应时间和存储限制监控
+7. **异常兜底** - 死局检测和回滚机制
+
+## 🚀 快速开始
+
+### 环境要求
+
+- Node.js >= 20.0.0
+- pnpm >= 8.0.0
+- DeepSeek API Key（或 Claude API Key）
+
+### 一键启动（推荐）
+
+```bash
+# 1. 克隆项目
+git clone <repository-url>
+cd StarRailReplicationPlan
+
+# 2. 安装依赖
+pnpm install
+
+# 3. 配置 API Key
+cp .env.example .env
+# 编辑 .env 文件，设置 DEEPSEEK_API_KEY 或 ANTHROPIC_API_KEY
+
+# 4. 构建项目
+pnpm build
+
+# 5. 启动后端 API（终端 1）
+cd packages/api
+pnpm start:dev
+
+# 6. 启动前端界面（终端 2）
+cd packages/web
+pnpm dev
+
+# 7. 访问应用
+# - Web UI: http://localhost:5173
+# - API 文档: http://localhost:3000/api/docs
+```
+
+### 使用 CLI 模式
+
+```bash
+# 启动 CLI 交互界面
+pnpm start
+
+# 或使用快速启动脚本
+./scripts/quick-start.sh
+```
+
+## 📖 详细文档
+
+- [快速开始指南](docs/快速开始指南.md) - 新手入门教程
+- [API 使用指南](docs/API使用指南.md) - REST API 详细说明
+- [部署指南](docs/部署指南.md) - 生产环境部署
+- [开发指南](docs/开发指南.md) - 开发者文档
+
+## 🏗️ 项目架构
+
+### Monorepo 结构
 
 ```
 StarRailReplicationPlan/
@@ -23,7 +101,10 @@ StarRailReplicationPlan/
 │   ├── types/                   # 共享类型定义层
 │   ├── infrastructure/          # 基础设施层
 │   ├── core/                    # 核心领域层
-│   └── cli/                     # CLI 表现层
+│   ├── api/                     # REST API 服务（NestJS）
+│   ├── web/                     # Web 前端（Vue 3 + Vuetify）
+│   ├── cli/                     # CLI 交互界面
+│   └── e2e-tests/               # 端到端测试
 │
 ├── config/                      # 配置文件目录
 │   ├── characters/              # 人物配置（YAML）
@@ -35,484 +116,125 @@ StarRailReplicationPlan/
 │   ├── sessions/                # 会话存档
 │   └── anchors/                 # 锚点数据
 │
-├── exports/                     # 导出包存储目录
-├── logs/                        # 日志文件目录
 ├── docs/                        # 项目文档
-│
-├── package.json                 # 根配置文件
-├── pnpm-workspace.yaml          # pnpm workspace 配置
-├── tsconfig.json                # TypeScript 根配置
-├── .eslintrc.cjs                # ESLint 配置
-├── .prettierrc                  # Prettier 配置
-├── commitlint.config.cjs        # Commit 规范配置
-├── .husky/                      # Git Hooks
-├── .env.example                 # 环境变量模板
-└── .gitignore                   # Git 忽略规则
+└── scripts/                     # 工具脚本
 ```
 
----
+### 技术栈
 
-## 包结构详解
+**后端**:
 
-### packages/types - 共享类型定义层
+- NestJS - REST API 框架
+- TypeScript - 类型安全
+- tsyringe - 依赖注入
+- Zod - 数据校验
+- Winston - 日志管理
 
-定义所有核心数据结构的 Zod Schema 和 TypeScript 类型。
+**前端**:
 
-```
-packages/types/
-├── src/
-│   ├── character.ts       # 人物相关 Schema（Character/Relationship/BigFiveTraits）
-│   ├── world-state.ts     # 世界状态 Schema（WorldState/Environment/EventRecord）
-│   ├── information.ts     # 信息 Schema（Information/InformationStore）
-│   ├── session.ts         # 会话 Schema（SessionState/Snapshot）
-│   ├── anchor.ts          # 锚点 Schema（Anchor/ComparisonResult）
-│   ├── config.ts          # 配置 Schema（LLMConfig/TriggerRule/CharacterConfig）
-│   └── index.ts           # 统一导出
-├── package.json
-└── tsconfig.json
-```
+- Vue 3 - 渐进式框架
+- Vuetify - Material Design 组件库
+- Axios - HTTP 客户端
+- Vite - 构建工具
 
-**核心类型说明**：
+**LLM**:
 
-| 类型            | 说明                                               |
-| --------------- | -------------------------------------------------- |
-| `Character`     | 人物实体，包含基础信息、状态、人格模型             |
-| `Relationship`  | 多维度关系（信任/敌对/亲密/尊重）                  |
-| `BigFiveTraits` | 五大人格特质（开放性/尽责性/外向性/宜人性/神经质） |
-| `WorldState`    | 世界状态，包含场景、时间线、环境、事件链           |
-| `Information`   | 信息实体，支持视野隔离                             |
-| `SessionState`  | 会话完整状态，单文件存储                           |
-| `Anchor`        | 剧情锚点，用于对比评估                             |
+- Deepseek API - 主要 LLM 提供商
+- Claude API - 备选 LLM 提供商
+- OpenAI SDK - 兼容接口
 
----
+**测试**:
 
-### packages/infrastructure - 基础设施层
+- Jest - 单元测试框架
+- Supertest - API 测试
+- ts-jest - TypeScript 支持
 
-提供存储、配置加载、LLM 调用、日志等基础能力。
+## 📦 核心包说明
 
-```
-packages/infrastructure/
-├── src/
-│   ├── storage/
-│   │   ├── storage.interface.ts    # 存储接口定义
-│   │   └── json-file-storage.ts    # JSON 文件存储实现
-│   ├── config/
-│   │   ├── config-loader.ts        # YAML/JSON 配置加载器
-│   │   └── env-loader.ts           # 环境变量加载器
-│   ├── llm/
-│   │   ├── llm-provider.interface.ts  # LLM Provider 接口
-│   │   ├── llm-provider.factory.ts    # Provider 工厂
-│   │   └── providers/
-│   │       ├── deepseek.provider.ts   # Deepseek 实现
-│   │       └── claude.provider.ts     # Claude 实现
-│   ├── error/
-│   │   └── app-error.ts            # 统一错误类
-│   ├── logging/
-│   │   └── logger.ts               # Winston 日志封装
-│   └── index.ts
-├── package.json
-└── tsconfig.json
+### packages/api - REST API 服务
+
+**6 个核心模块**:
+
+- Session 模块 - 会话管理（4 个端点）
+- Story 模块 - 剧情推进（3 个端点）
+- Snapshot 模块 - 快照管理（4 个端点）
+- Character 模块 - 人物管理（5 个端点）
+- Scene 模块 - 场景管理（5 个端点）
+- Anchor 模块 - 锚点管理（5 个端点）
+
+**启动方式**:
+
+```bash
+cd packages/api
+pnpm start:dev  # 开发模式
+pnpm start:prod # 生产模式
 ```
 
-**模块说明**：
+**API 文档**: http://localhost:3000/api/docs
 
-| 模块                 | 功能                                  |
-| -------------------- | ------------------------------------- |
-| `JsonFileStorage`    | 会话状态和快照的 JSON 文件存储        |
-| `ConfigLoader`       | 加载 YAML/JSON 配置并通过 Zod 校验    |
-| `EnvLoader`          | 从 .env 文件加载敏感配置（API Key）   |
-| `LLMProviderFactory` | 管理多个 LLM Provider，支持按角色分配 |
-| `DeepseekProvider`   | Deepseek API 调用实现                 |
-| `ClaudeProvider`     | Anthropic Claude API 调用实现         |
-| `Logger`             | 基于 Winston 的日志管理               |
+### packages/web - Web 前端
 
----
+**6 个核心页面**:
 
-### packages/core - 核心领域层
+- SessionList - 会话列表
+- CreateSession - 创建会话
+- StoryAdvance - 剧情推进
+- CharacterList - 人物管理
+- SceneList - 场景管理
+- SnapshotList - 快照管理
 
-实现 8 大核心业务模块。
-
-```
-packages/core/
-├── src/
-│   ├── character-agent/           # 角色 Agent 模块
-│   │   ├── character-agent.ts     # LLM 驱动的角色响应生成
-│   │   ├── prompt-builder.ts      # Prompt 构建器
-│   │   └── index.ts
-│   ├── character-state/           # 人物状态模块
-│   │   ├── behavior-engine.ts     # 行为引擎（人格→行为倾向推导）
-│   │   ├── character-state.service.ts  # 状态管理服务
-│   │   └── index.ts
-│   ├── vision-manager/            # 视野管理模块
-│   │   ├── vision-manager.ts      # 信息视野过滤
-│   │   └── index.ts
-│   ├── world-engine/              # 世界引擎模块
-│   │   ├── world-engine.ts        # 世界状态管理
-│   │   └── index.ts
-│   ├── input-parser/              # 输入解析模块
-│   │   ├── input-parser.ts        # 用户输入分类解析
-│   │   └── index.ts
-│   ├── story-orchestrator/        # 剧情编排模块
-│   │   ├── story-orchestrator.ts  # 串联各模块的主流程
-│   │   └── index.ts
-│   ├── anchor-evaluation/         # 锚点评估模块
-│   │   ├── anchor-evaluator.ts    # 分支对比评估
-│   │   └── index.ts
-│   ├── export-import/             # 导出导入模块
-│   │   ├── export-import.service.ts  # 人物/场景导出导入
-│   │   └── index.ts
-│   ├── container.ts               # DI 容器配置
-│   └── index.ts
-├── package.json
-└── tsconfig.json
-```
-
-**模块说明**：
-
-| 模块                  | 功能                              |
-| --------------------- | --------------------------------- |
-| `CharacterAgent`      | 调用 LLM 生成角色对话和行动       |
-| `PromptBuilder`       | 构建角色响应的 System/User Prompt |
-| `BehaviorEngine`      | 从五大人格推导行为倾向            |
-| `TriggerEngine`       | 执行触发表规则，更新人物状态      |
-| `VisionManager`       | 管理信息视野，实现视野隔离        |
-| `WorldEngine`         | 管理世界状态、场景切换、事件链    |
-| `InputParser`         | 解析用户输入为指令型/对话型       |
-| `StoryOrchestrator`   | 剧情推进主流程编排                |
-| `AnchorEvaluator`     | 对比当前分支与原剧情锚点          |
-| `ExportImportService` | 人物/场景配置的导出导入           |
-
----
-
-### packages/web - Web 表现层
-
-基于 Vue 3 + Vuetify 的 Web 管理界面。
-
-```
-packages/web/
-├── src/
-│   ├── views/
-│   │   ├── layout.vue           # 全局布局（侧边导航）
-│   │   ├── HomePage.vue         # 首页仪表板
-│   │   ├── SessionList.vue      # 会话列表
-│   │   ├── CreateSession.vue    # 新建会话
-│   │   ├── StoryAdvance.vue     # 会话推进（对话界面）
-│   │   ├── SceneList.vue        # 场景列表
-│   │   ├── SceneDetail.vue      # 场景详情/编辑
-│   │   ├── CharacterList.vue    # 人物列表
-│   │   ├── CharacterDetail.vue  # 人物详情/编辑
-│   │   ├── FactionList.vue      # 势力列表
-│   │   ├── FactionDetail.vue    # 势力详情/编辑
-│   │   ├── ConfigList.vue       # 配置包管理
-│   │   ├── AnchorList.vue       # 锚点管理
-│   │   └── AnalyticsView.vue    # 分析报告
-│   ├── router/index.ts          # 路由配置
-│   ├── plugins/vuetify.ts       # Vuetify 配置
-│   └── main.ts                  # 应用入口
-├── package.json
-└── vite.config.ts
-```
-
-**启动 Web UI**：
+**启动方式**:
 
 ```bash
 cd packages/web
-pnpm dev   # 开发模式，默认 http://localhost:5173
+pnpm dev   # 开发模式
 pnpm build # 生产构建
 ```
 
----
+### packages/core - 核心业务逻辑
 
-### packages/cli - CLI 表现层
+**8 大核心模块**:
 
-命令行交互界面，提供用户与系统交互的入口。
+- CharacterAgent - LLM 驱动的角色响应
+- CharacterState - 人物状态管理
+- VisionManager - 视野隔离
+- WorldEngine - 世界状态管理
+- InputParser - 输入解析
+- StoryOrchestrator - 剧情编排
+- AnchorEvaluator - 锚点评估
+- ExportImport - 导出导入
 
-```
-packages/cli/
-├── src/
-│   ├── commands/                  # 命令定义
-│   │   ├── start.ts               # 启动会话命令
-│   │   ├── session.ts             # 会话管理命令
-│   │   ├── export.ts              # 导出命令
-│   │   ├── import.ts              # 导入命令
-│   │   └── config.ts              # 配置管理命令
-│   ├── ui/                        # 交互组件
-│   │   ├── main-menu.ts           # 主菜单
-│   │   └── session-workspace.ts   # 会话工作区
-│   ├── services/                  # 服务封装
-│   │   ├── session-manager.ts     # 会话管理服务
-│   │   └── export-service.ts      # 导出服务
-│   └── index.ts                   # CLI 入口
-├── package.json
-└── tsconfig.json
-```
+## 🧪 测试
 
-**CLI 命令说明**：
-
-| 命令                              | 说明                     |
-| --------------------------------- | ------------------------ |
-| `star-rail`                       | 显示交互式主菜单         |
-| `star-rail start`                 | 启动新会话或继续现有会话 |
-| `star-rail start -n`              | 直接创建新会话           |
-| `star-rail start -c <id>`         | 继续指定会话             |
-| `star-rail session list`          | 列出所有会话             |
-| `star-rail session info <id>`     | 查看会话详情             |
-| `star-rail session delete <id>`   | 删除会话                 |
-| `star-rail session snapshot <id>` | 创建快照                 |
-| `star-rail export [type] [id]`    | 导出人物/场景配置        |
-| `star-rail import [file]`         | 导入配置文件             |
-| `star-rail config show`           | 显示当前配置             |
-| `star-rail config check`          | 验证配置是否正确         |
-| `star-rail config init`           | 初始化配置目录           |
-
-**会话工作区命令**：
-
-进入会话后，可使用以下命令：
-
-| 命令               | 说明         |
-| ------------------ | ------------ |
-| `/help`            | 显示帮助信息 |
-| `/status`          | 显示当前状态 |
-| `/characters`      | 显示人物列表 |
-| `/events`          | 显示最近事件 |
-| `/save`            | 保存会话     |
-| `/snapshot [描述]` | 创建快照     |
-| `/quit`            | 退出会话     |
-
-**剧情输入格式**：
-
-| 格式   | 示例               |
-| ------ | ------------------ |
-| 对话型 | `对三月七说：你好` |
-| 指令型 | `让三月七去调查`   |
-
----
-
-## 依赖配置说明
-
-### 根目录 devDependencies
-
-| 依赖                               | 版本     | 功能                       |
-| ---------------------------------- | -------- | -------------------------- |
-| `typescript`                       | ^5.3.3   | TypeScript 编译器          |
-| `@types/node`                      | ^20.10.6 | Node.js 类型定义           |
-| `tsup`                             | ^8.0.1   | 快速 TypeScript 打包工具   |
-| `eslint`                           | ^8.56.0  | 代码静态检查               |
-| `@typescript-eslint/parser`        | ^6.17.0  | ESLint TypeScript 解析器   |
-| `@typescript-eslint/eslint-plugin` | ^6.17.0  | ESLint TypeScript 规则     |
-| `eslint-config-prettier`           | ^9.1.0   | ESLint + Prettier 兼容配置 |
-| `prettier`                         | ^3.1.1   | 代码格式化                 |
-| `husky`                            | ^8.0.3   | Git Hooks 管理             |
-| `lint-staged`                      | ^15.2.0  | 暂存文件 lint              |
-| `@commitlint/cli`                  | ^18.4.4  | Commit 消息检查            |
-| `@commitlint/config-conventional`  | ^18.4.4  | Conventional Commits 规范  |
-
-### packages/types dependencies
-
-| 依赖  | 版本    | 功能                      |
-| ----- | ------- | ------------------------- |
-| `zod` | ^3.22.4 | 运行时数据校验 + 类型推导 |
-
-### packages/infrastructure dependencies
-
-| 依赖                | 版本    | 功能                        |
-| ------------------- | ------- | --------------------------- |
-| `zod`               | ^3.22.4 | 配置校验                    |
-| `tsyringe`          | ^4.8.0  | 依赖注入容器                |
-| `reflect-metadata`  | ^0.2.1  | 装饰器元数据支持            |
-| `dotenv`            | ^16.3.1 | 环境变量加载                |
-| `js-yaml`           | ^4.1.0  | YAML 解析                   |
-| `winston`           | ^3.11.0 | 日志管理                    |
-| `fs-extra`          | ^11.2.0 | 增强的文件系统操作          |
-| `@anthropic-ai/sdk` | ^0.17.1 | Claude API SDK              |
-| `openai`            | ^4.24.1 | OpenAI 兼容 API（Deepseek） |
-
-### packages/core dependencies
-
-| 依赖                        | 版本         | 功能         |
-| --------------------------- | ------------ | ------------ |
-| `@star-rail/types`          | workspace:\* | 共享类型定义 |
-| `@star-rail/infrastructure` | workspace:\* | 基础设施层   |
-| `tsyringe`                  | ^4.8.0       | 依赖注入     |
-| `reflect-metadata`          | ^0.2.1       | 装饰器支持   |
-| `fs-extra`                  | ^11.2.0      | 文件操作     |
-
-### packages/cli dependencies
-
-| 依赖                        | 版本         | 功能           |
-| --------------------------- | ------------ | -------------- |
-| `@star-rail/types`          | workspace:\* | 共享类型定义   |
-| `@star-rail/infrastructure` | workspace:\* | 基础设施层     |
-| `@star-rail/core`           | workspace:\* | 核心领域层     |
-| `commander`                 | ^11.1.0      | 命令行参数解析 |
-| `inquirer`                  | ^9.2.12      | 交互式命令行   |
-| `chalk`                     | ^5.3.0       | 终端颜色输出   |
-| `ora`                       | ^7.0.1       | 终端加载动画   |
-| `cli-table3`                | ^0.6.3       | 终端表格输出   |
-| `boxen`                     | ^7.1.1       | 终端边框盒子   |
-| `reflect-metadata`          | ^0.2.1       | 装饰器支持     |
-
----
-
-## 配置文件说明
-
-### config/llm.yaml - LLM 配置
-
-```yaml
-defaultProvider: deepseek # 默认使用的 Provider
-
-providers:
-  deepseek:
-    enabled: true
-    model: deepseek-chat
-    baseUrl: https://api.deepseek.com/v1
-    defaultParams:
-      temperature: 0.7
-      maxTokens: 2000
-
-  claude:
-    enabled: true
-    model: claude-sonnet-4-5-20250929
-    defaultParams:
-      temperature: 0.7
-      maxTokens: 2000
-
-characterProviders: # 角色专用 Provider（可选）
-  # march7: deepseek
-  # stelle: claude
-```
-
-### config/characters/\*.yaml - 人物配置
-
-定义人物的基础信息、人格特质、初始关系等。
-
-### config/scenes/\*.yaml - 场景配置
-
-定义场景的环境、连接关系等。
-
-### config/triggers/\*.yaml - 触发表配置
-
-定义事件触发的状态变化规则。
-
-### .env - 环境变量
-
-```bash
-# LLM API Keys（敏感信息，不提交到 Git）
-DEEPSEEK_API_KEY=sk-xxxxx
-ANTHROPIC_API_KEY=sk-ant-xxxxx
-
-# 应用配置
-NODE_ENV=development
-LOG_LEVEL=info
-```
-
----
-
-## 测试状态
-
-| 包                          | 测试用例 | 通过率 | 分支覆盖率 |
-| --------------------------- | -------- | ------ | ---------- |
-| `@star-rail/core`           | 227      | 100%   | 82.75% ✅  |
-| `@star-rail/infrastructure` | 92       | 100%   | 90% ✅     |
+### 运行测试
 
 ```bash
 # 运行所有测试
 pnpm test
 
-# 运行并查看覆盖率
+# 运行单元测试
+pnpm --filter @star-rail/core test
+pnpm --filter @star-rail/infrastructure test
+
+# 运行 E2E 测试
+pnpm --filter @star-rail/api test:e2e
+
+# 查看覆盖率
 pnpm --filter @star-rail/core test --coverage
-pnpm --filter @star-rail/infrastructure test --coverage
 ```
 
----
+### 测试状态
 
-## 快速开始
+| 包                          | 测试用例 | 通过率 | 覆盖率    |
+| --------------------------- | -------- | ------ | --------- |
+| `@star-rail/core`           | 319      | 100%   | 82.75% ✅ |
+| `@star-rail/infrastructure` | 92       | 100%   | 90% ✅    |
+| `@star-rail/api`            | 44       | 100%   | 100% ✅   |
+| `@star-rail/api` (E2E)      | 17       | 70.6%  | -         |
 
-### 🚀 一键启动（推荐）
+## 🔧 开发指南
 
-```bash
-# 1. 安装依赖
-pnpm install
-
-# 2. 配置 API Key
-cp .env.example .env
-# 编辑 .env 文件，设置 DEEPSEEK_API_KEY
-
-# 3. 一键启动（自动构建、创建示例会话、启动游戏）
-./scripts/quick-start.sh
-```
-
-### 📖 详细指南
-
-查看 [快速开始指南](docs/快速开始指南.md) 了解：
-
-- 环境配置详细步骤
-- 示例会话创建
-- 互动命令使用
-- 核心功能体验
-- 常见问题解答
-
-### 环境要求
-
-- Node.js >= 20.0.0
-- pnpm >= 8.0.0
-- DeepSeek API Key（或其他兼容 OpenAI 的 LLM API）
-
-### 手动安装
-
-```bash
-# 安装依赖
-pnpm install
-
-# 构建所有包
-pnpm build
-
-# 配置环境变量
-cp .env.example .env
-# 编辑 .env 文件，填入 DEEPSEEK_API_KEY
-
-# 创建示例会话
-pnpm demo
-
-# 启动游戏
-pnpm start
-```
-
-### 运行
-
-**CLI 会自动检测并切换到项目根目录，无论从哪里运行都能正确访问配置和数据。**
-
-```bash
-# 方式1：使用 pnpm 脚本（推荐）
-pnpm start                    # 启动交互式菜单
-pnpm cli session list         # 列出所有会话
-pnpm cli config check         # 检查配置
-
-# 方式2：使用启动脚本
-./start-cli.sh                # 启动交互式菜单
-./start-cli.sh session list   # 列出所有会话
-
-# 方式3：直接运行（可以从任何目录）
-node packages/cli/dist/index.js              # 启动交互式菜单
-node packages/cli/dist/index.js start --new  # 创建新会话
-```
-
-**路径处理机制：**
-
-- CLI 启动时会自动查找项目根目录（包含 `workspaces` 字段的 package.json）
-- 自动切换工作目录到项目根目录，确保相对路径正确
-- 所有数据文件（会话、锚点）都存储在项目根目录的 `data/` 目录下
-- 配置文件从项目根目录的 `config/` 目录加载
-- `.env` 文件从项目根目录加载
-
-**注意事项：**
-
-- 确保已经运行 `pnpm build` 构建所有包
-- 确保 `.env` 文件已配置（从 `.env.example` 复制并填写 API Key）
-
----
-
-## 开发命令
+### 开发命令
 
 ```bash
 # 安装依赖
@@ -530,25 +252,19 @@ pnpm lint
 # 代码格式化
 pnpm format
 
-# 运行测试
-pnpm test
-
 # 清理构建产物
 pnpm clean
 ```
 
----
+### Git 工作流
 
-## Git 工作流
+**分支策略**:
 
-### 分支策略（GitHub Flow）
+- `main` - 主分支，始终可部署
+- `feature/*` - 功能分支
+- `bugfix/*` - 修复分支
 
-- `main`：主分支，始终可部署
-- `feature/*`：功能分支
-- `bugfix/*`：修复分支
-- `hotfix/*`：紧急修复分支
-
-### Commit 规范（Conventional Commits）
+**Commit 规范** (Conventional Commits):
 
 ```
 <type>(<scope>): <subject>
@@ -563,48 +279,35 @@ pnpm clean
 - chore: 构建/工具变更
 ```
 
----
+## 📚 文档索引
 
-## 架构设计
+### 用户文档
 
-### 分层架构
+- [快速开始指南](docs/快速开始指南.md)
+- [API 使用指南](docs/API使用指南.md)
+- [部署指南](docs/部署指南.md)
 
-```
-┌─────────────────────────────────────┐
-│           CLI 表现层                 │  用户交互
-├─────────────────────────────────────┤
-│           Core 核心领域层            │  业务逻辑
-├─────────────────────────────────────┤
-│       Infrastructure 基础设施层      │  技术实现
-├─────────────────────────────────────┤
-│           Types 类型定义层           │  数据结构
-└─────────────────────────────────────┘
-```
-
-### 模块依赖关系
-
-```
-InputParser → StoryOrchestrator → WorldEngine
-                                → VisionManager
-                                → CharacterStateService
-                                → CharacterAgent → LLMProviderFactory
-                                                 → BehaviorEngine
-                                                 → PromptBuilder
-```
-
----
-
-## 文档
+### 开发文档
 
 - [需求文档](docs/需求文档-星穹铁道剧情复现计划.md)
 - [概要设计](docs/概要设计.md)
 - [技术选型与架构设计](docs/技术选型与架构设计.md)
-- [Phase1 开发落地方案](docs/Phase1-开发落地方案.md)
 - [WBS 任务分解表](docs/WBS任务分解表.md)
 - [项目进度表](docs/项目进度表.md)
 
----
+### Phase 完成总结
 
-## License
+- [Phase 1 完成总结](docs/Phase1-测试完成总结.md)
+- [Phase 2 完成总结](docs/Phase2-完成总结.md)
+- [Phase 3 完成总结](docs/Phase3-完成总结.md)
+- [Phase 4 完成总结](docs/Phase4-完成总结.md)
 
-MIT
+## 🤝 贡献指南
+
+欢迎贡献代码、报告问题或提出建议！
+
+1. Fork 项目
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'feat: Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
