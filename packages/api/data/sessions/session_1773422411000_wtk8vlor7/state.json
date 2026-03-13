@@ -1,0 +1,42 @@
+{
+  "worldState": {
+    "currentSceneId": "test_scene_001",
+    "timeline": {
+      "currentTurn": 0,
+      "timestamp": 1773422411000
+    },
+    "environment": {
+      "physical": {
+        "weather": "sunny",
+        "temperature": 20,
+        "lighting": "bright",
+        "timeOfDay": "noon",
+        "sceneCondition": {
+          "accessible": true,
+          "damaged": false,
+          "crowded": false
+        }
+      },
+      "social": {
+        "factions": {}
+      },
+      "atmosphere": {
+        "tension": 0,
+        "mood": "neutral"
+      }
+    },
+    "eventChain": []
+  },
+  "characters": {},
+  "information": {
+    "global": [],
+    "byCharacter": {}
+  },
+  "metadata": {
+    "sessionId": "session_1773422411000_wtk8vlor7",
+    "sessionName": "测试会话",
+    "createdAt": 1773422411000,
+    "lastSaved": 1773422411001,
+    "version": "1.0.0"
+  }
+}
