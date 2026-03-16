@@ -47,8 +47,22 @@ export interface AttributionResult {
 }
 
 /**
- * 视野管理器
- * 管理全局信息库和各人物的已知信息
+ * 视野管理器 - 信息可见性与归属管理系统
+ *
+ * 职责：
+ * 1. 管理全局信息库和各角色的已知信息
+ * 2. 实现信息归属规则（目睹/听闻/被告知）
+ * 3. 支持推理规则（基于已知信息推导新信息）
+ * 4. 支持遗忘规则（移除过时或不重要的信息）
+ * 5. 支持模糊规则（降低信息置信度）
+ * 6. 提供信息差异分析（用于双角色对话）
+ *
+ * 核心原则：
+ * - 信息隔离：每个角色只能访问自己已知的信息
+ * - 规则驱动：通过配置规则控制信息传播
+ * - 置信度管理：信息可能随时间衰减或模糊
+ *
+ * 对应 WBS：P1-VM-01（视野过滤）、P1-VM-02（信息归属）、P2-VM-01（推理规则）、P2-VM-02（遗忘规则）、P2-VM-03（模糊规则）
  */
 @injectable()
 export class VisionManager {
@@ -71,9 +85,15 @@ export class VisionManager {
 
   /**
    * 获取人物的过滤后视野
-   * 返回该人物已知的信息子集
+   *
+   * 这是视野管理的核心方法，返回角色已知的信息子集。
+   * 用于在调用 LLM 前过滤掉角色不应知道的信息，确保信息隔离。
+   *
+   * P1-VM-01: 视野过滤
+   *
    * @param characterId 人物 ID
    * @param informationStore 信息库
+   * @returns 角色已知的信息列表
    */
   getFilteredVision(
     characterId: string,
@@ -178,10 +198,21 @@ export class VisionManager {
 
   /**
    * 基于事件处理信息归属
-   * 根据事件类型和归属规则，将信息分配给相关人物
+   *
+   * 根据事件类型和归属规则，将信息分配给相关人物。
+   * 这是信息传播的核心机制。
+   *
+   * 流程：
+   * 1. 查找匹配的归属规则（基于事件类型和条件）
+   * 2. 如果没有匹配规则，使用默认行为（所有在场人物获得信息）
+   * 3. 应用规则，将信息归属给目标人物
+   *
+   * P1-VM-02: 信息归属
+   *
    * @param informationStore 信息库
-   * @param context 事件上下文
+   * @param context 事件上下文（事件、参与者、在场人物、场景）
    * @param informationContent 信息内容
+   * @returns 归属结果，包含信息 ID、归属对象、来源类型、置信度
    */
   processEventAttribution(
     informationStore: InformationStore,
@@ -541,7 +572,20 @@ export class VisionManager {
 
   /**
    * 应用推理规则
-   * 对指定角色检查前提标签，满足时自动添加推理信息
+   *
+   * 基于角色已知信息的标签，自动推导出新信息。
+   * 例如：如果角色知道"A 是 B 的朋友"和"B 是 C 的朋友"，可以推理出"A 可能认识 C"。
+   *
+   * 推理条件：
+   * 1. 角色已知信息包含所有前提标签
+   * 2. 推理结论尚未存在（避免重复）
+   *
+   * P2-VM-01: 推理规则
+   *
+   * @param informationStore 信息库
+   * @param characterId 角色 ID
+   * @param sceneId 当前场景 ID
+   * @param now 当前时间戳
    * @returns 新增的推理信息列表
    */
   applyInference(
@@ -552,6 +596,7 @@ export class VisionManager {
   ): Information[] {
     if (this.inferenceRules.length === 0) return [];
 
+    // 获取角色已知信息的所有标签
     const knownIds = new Set(informationStore.byCharacter[characterId] ?? []);
     const knownInfos = informationStore.global.filter((i) =>
       knownIds.has(i.id)
@@ -560,6 +605,7 @@ export class VisionManager {
 
     const added: Information[] = [];
 
+    // 遍历推理规则，检查前提是否满足
     for (const rule of this.inferenceRules) {
       // 检查前提标签是否全部满足
       if (!rule.premiseTags.every((tag) => knownTags.has(tag))) continue;
@@ -573,12 +619,13 @@ export class VisionManager {
       );
       if (alreadyExists) continue;
 
+      // 创建推理信息并归属给角色
       const info = this.addGlobalInformation(informationStore, {
         content: rule.conclusionTemplate,
         source: 'inferred' as const,
         timestamp: now,
         sceneId,
-        tags: ['inferred', ...rule.premiseTags],
+        tags: ['inferred', ...rule.premiseTags], // 保留前提标签，用于后续推理
       });
       this.assignInformationToCharacter(informationStore, characterId, info.id);
       added.push(info);
@@ -589,7 +636,20 @@ export class VisionManager {
 
   /**
    * 应用遗忘规则
-   * 从角色的已知信息中移除满足遗忘条件的信息
+   *
+   * 从角色的已知信息中移除满足遗忘条件的信息。
+   * 用于模拟记忆衰退、信息过时等情况。
+   *
+   * 遗忘条件：
+   * 1. 信息年龄超过阈值（maxAgeMs）
+   * 2. 信息包含特定标签（targetTags）
+   * 3. 关键记忆（isKeyMemory）默认不会被遗忘
+   *
+   * P2-VM-02: 遗忘规则
+   *
+   * @param informationStore 信息库
+   * @param characterId 角色 ID
+   * @param now 当前时间戳
    * @returns 被遗忘的信息 ID 列表
    */
   applyForgetting(
@@ -642,8 +702,25 @@ export class VisionManager {
 
   /**
    * 应用模糊规则
-   * 更新角色已知信息引用的置信度（降低）
+   *
+   * 更新角色已知信息的置信度（降低）。
+   * 用于模拟记忆模糊、信息不确定性增加等情况。
+   *
+   * 模糊条件：
+   * 1. 信息来源类型匹配（sourceTypes）
+   * 2. 信息包含特定标签（targetTags）
+   * 3. 信息年龄超过阈值（afterAgeMs）
+   *
+   * 置信度衰减：confidence *= decayFactor（例如 0.9 表示每次衰减 10%）
+   *
+   * P2-VM-03: 模糊规则
+   *
    * 注意：置信度存储在 KnownInformationRef 中，此方法返回需要更新的引用列表
+   *
+   * @param informationStore 信息库
+   * @param characterId 角色 ID
+   * @param currentRefs 当前的已知信息引用列表
+   * @param now 当前时间戳
    * @returns 更新后的 KnownInformationRef 列表（仅包含被模糊的条目）
    */
   applyFuzzy(
@@ -668,6 +745,7 @@ export class VisionManager {
       let confidence = ref.confidence ?? 1.0;
       let changed = false;
 
+      // 遍历模糊规则，检查是否匹配
       for (const rule of this.fuzzyRules) {
         // 检查来源类型
         if (rule.sourceTypes && !rule.sourceTypes.includes(info.source))
@@ -679,11 +757,12 @@ export class VisionManager {
           if (!rule.targetTags.some((t) => infoTags.includes(t))) continue;
         }
 
-        // 检查年龄
+        // 检查年龄（信息必须超过指定年龄才会模糊）
         if (rule.afterAgeMs !== undefined) {
           if (now - info.timestamp < rule.afterAgeMs) continue;
         }
 
+        // 应用衰减因子（置信度降低，但不会低于 0）
         confidence = Math.max(0, confidence * rule.decayFactor);
         changed = true;
       }

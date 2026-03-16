@@ -39,9 +39,35 @@ export interface RelationshipChangeRecord {
 }
 
 /**
- * 关系管理器
- * P2-CS-01: 多角色状态与势力/关系扩展
- * 管理人物间的多维度关系
+ * 关系管理器 - 角色间多维度关系管理
+ *
+ * 职责：
+ * 1. 管理角色间的关系创建、更新、查询
+ * 2. 处理关系变更事件（信任、敌意、亲密度等）
+ * 3. 记录关系变更历史
+ * 4. 提供关系查询和分析功能
+ *
+ * 关系维度：
+ * - trust（信任度）：对对方的信任程度（0-1）
+ * - intimacy（亲密度）：与对方的亲密程度（0-1）
+ * - hostility（敌意）：对对方的敌意程度（0-1）
+ * - respect（尊重）：对对方的尊重程度（0-1）
+ * - affection（好感）：对对方的好感程度（0-1）
+ * - fear（恐惧）：对对方的恐惧程度（0-1）
+ * - dependence（依赖）：对对方的依赖程度（0-1）
+ * - tags（标签）：关系标签（如 "朋友"、"敌人"、"导师"）
+ *
+ * 关系事件类型：
+ * - trust_gain/loss: 信任度变化
+ * - hostility_increase/decrease: 敌意变化
+ * - intimacy_increase/decrease: 亲密度变化
+ * - respect_gain/loss: 尊重度变化
+ * - affection_gain/loss: 好感度变化
+ * - fear_increase/decrease: 恐惧度变化
+ * - dependence_increase/decrease: 依赖度变化
+ * - tag_add/remove: 标签管理
+ *
+ * 对应 WBS：P2-CS-01（多角色状态与势力/关系扩展）
  */
 @injectable()
 export class RelationshipManager {

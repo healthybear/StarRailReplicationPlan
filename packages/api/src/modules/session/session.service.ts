@@ -5,6 +5,20 @@ import type { SessionState } from '@star-rail/types';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { SessionListQueryDto } from './dto/session-query.dto';
 
+/**
+ * 会话服务 - 会话生命周期管理
+ *
+ * 职责：
+ * 1. 创建新会话（初始化世界状态、角色、信息库）
+ * 2. 加载已有会话
+ * 3. 列出所有会话
+ * 4. 删除会话
+ *
+ * 与 Core 层的关系：
+ * - 依赖注入 StoryOrchestrator（用于会话持久化）
+ * - 负责会话的 CRUD 操作
+ * - 提供 REST API 接口
+ */
 @Injectable()
 export class SessionService {
   constructor(
