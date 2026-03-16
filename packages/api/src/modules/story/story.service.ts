@@ -8,6 +8,20 @@ import { AdvanceDualDto } from './dto/advance-dual.dto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
+/**
+ * 故事服务 - REST API 业务逻辑层
+ *
+ * 职责：
+ * 1. 提供故事推进的 HTTP 接口（单角色/多角色/双角色）
+ * 2. 加载场景配置文件
+ * 3. 协调 StoryOrchestrator 完成故事推进
+ * 4. 处理会话加载和保存
+ *
+ * 与 Core 层的关系：
+ * - 依赖注入 StoryOrchestrator（通过 CoreModule 提供）
+ * - 负责 HTTP 请求/响应处理
+ * - 不包含业务逻辑，仅作为 API 适配层
+ */
 @Injectable()
 export class StoryService {
   constructor(

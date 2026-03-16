@@ -56,14 +56,46 @@ export const RESPONSE_FORMAT_INSTRUCTION = `
 `;
 
 /**
- * Prompt 构建器
- * 构建用于 LLM 调用的 Prompt
+ * Prompt 构建器 - LLM 提示词生成
+ *
+ * 职责：
+ * 1. 构建系统提示词（定义角色身份和核心规则）
+ * 2. 构建用户提示词（提供当前情境和期望响应）
+ * 3. 格式化角色信息（性格、能力、关系、已知信息）
+ * 4. 确保视野隔离（只提供角色已知的信息）
+ *
+ * 提示词结构：
+ * - 系统提示词：角色身份、核心规则（视野隔离、性格一致、不打破角色）
+ * - 用户提示词：角色状态、当前场景、已知信息、最近事件、用户输入、响应格式
+ *
+ * 关键原则：
+ * - 视野隔离：只提供【你已知的信息】，不泄露全局信息
+ * - 性格一致：根据五大人格特质描述角色性格
+ * - 关系感知：优先显示与在场角色的关系
+ *
+ * 对应 WBS：P1-CA-01（视野隔离）、P1-CA-02（提示词构建）
  */
 @injectable()
 export class PromptBuilder {
   /**
    * 构建角色响应 Prompt
+   *
+   * 这是提示词构建的核心方法，生成完整的用户提示词。
+   *
+   * 提示词包含：
+   * 1. 角色身份和性格描述
+   * 2. 角色当前状态（能力、关系）
+   * 3. 当前场景描述
+   * 4. 角色已知信息（过滤后视野）
+   * 5. 最近发生的事件
+   * 6. 用户输入（如果有）
+   * 7. 响应格式要求
+   * 8. 重要规则（视野限制、性格一致性）
+   *
    * P1-CA-01: 输入仅含该人物状态与视野、当前场景描述
+   *
+   * @param context 提示词构建上下文
+   * @returns 完整的用户提示词
    */
   buildCharacterResponsePrompt(context: PromptContext): string {
     const {
@@ -122,6 +154,18 @@ ${RESPONSE_FORMAT_INSTRUCTION}`;
 
   /**
    * 构建系统 Prompt
+   *
+   * 系统提示词定义角色扮演的核心规则，包括：
+   * 1. 角色身份声明
+   * 2. 视野隔离规则（只能知道明确告知的信息）
+   * 3. 性格一致性要求
+   * 4. 不打破角色规则
+   * 5. 输出格式要求
+   *
+   * 系统提示词在整个对话中保持不变，用于约束 LLM 的行为。
+   *
+   * @param character 角色对象
+   * @returns 系统提示词
    */
   buildSystemPrompt(character: Character): string {
     return `你是一个角色扮演助手，正在扮演 ${character.name}。
@@ -155,6 +199,18 @@ ${userInput ? `输入：${userInput}` : ''}
 
   /**
    * 描述人格特质
+   *
+   * 基于五大人格模型（Big Five）将数值转换为自然语言描述。
+   *
+   * 五大人格维度：
+   * - openness（开放性）：好奇心、想象力 vs 务实保守
+   * - conscientiousness（尽责性）：认真负责 vs 随性自由
+   * - extraversion（外向性）：外向活泼 vs 内敛沉稳
+   * - agreeableness（宜人性）：友善合作 vs 独立自主
+   * - neuroticism（神经质）：情绪敏感 vs 情绪稳定
+   *
+   * @param personality 人格特质对象
+   * @returns 人格描述字符串
    */
   describePersonality(personality: Personality): string {
     const { traits } = personality;
@@ -180,18 +236,30 @@ ${userInput ? `输入：${userInput}` : ''}
 
   /**
    * 格式化已知信息
+   *
+   * 将信息列表格式化为提示词中的文本。
+   * 只取最近 10 条信息，避免提示词过长。
+   *
+   * @param info 信息列表
+   * @returns 格式化后的信息文本
    */
   private formatKnownInfo(info: Information[]): string {
     if (info.length === 0) return '';
 
     return info
-      .slice(-10) // 只取最近 10 条
+      .slice(-10) // 只取最近 10 条，控制提示词长度
       .map((i) => `- ${i.content}`)
       .join('\n');
   }
 
   /**
    * 格式化最近事件
+   *
+   * 将事件列表格式化为提示词中的文本。
+   * 只取最近 5 条事件，提供足够的上下文。
+   *
+   * @param events 事件列表
+   * @returns 格式化后的事件文本
    */
   private formatRecentEvents(events: EventRecord[]): string {
     if (events.length === 0) return '';
@@ -204,6 +272,13 @@ ${userInput ? `输入：${userInput}` : ''}
 
   /**
    * 格式化关系描述
+   *
+   * 将角色关系格式化为提示词中的文本。
+   * 如果有在场角色，优先显示与在场角色的关系（更相关）。
+   *
+   * @param character 角色对象
+   * @param presentCharacters 在场角色列表（可选）
+   * @returns 格式化后的关系文本
    */
   private formatRelationships(
     character: Character,

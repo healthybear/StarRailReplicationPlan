@@ -85,8 +85,21 @@ export const DEFAULT_PERMISSION_CONFIG: PermissionConfig = {
 };
 
 /**
- * 输入解析器
- * 解析用户输入，分类为指令型或对话型
+ * 输入解析器 - 用户输入解析与权限验证
+ *
+ * 职责：
+ * 1. 解析用户输入，识别输入类型（命令/对话）
+ * 2. 提取目标角色和操作内容
+ * 3. 验证用户权限（可控制的角色、禁止的动作）
+ * 4. 支持角色名称识别和映射
+ *
+ * 输入类型：
+ * - Command: 指令型（如"让三月七去调查"）
+ * - Dialogue: 对话型（如"对三月七说'你好'"）
+ * - Invalid: 无法解析的输入
+ * - Unauthorized: 越权请求
+ *
+ * 对应 WBS：P1-IP-01（输入解析）、P1-IP-02（权限验证）
  */
 @injectable()
 export class InputParser {

@@ -7,6 +7,25 @@ import type { SnapshotService as CoreSnapshotService } from '@star-rail/core';
 import type { StoryOrchestrator } from '@star-rail/core';
 import { CreateSnapshotDto } from './dto/create-snapshot.dto';
 
+/**
+ * 快照服务 - 状态快照管理 API
+ *
+ * 职责：
+ * 1. 创建状态快照（保存当前会话状态）
+ * 2. 列出会话的所有快照
+ * 3. 恢复快照（回退到之前的状态）
+ * 4. 删除快照
+ *
+ * 快照用途：
+ * - 锚点对比：记录关键时刻的状态，用于分支对比
+ * - 状态回退：当剧情陷入僵局时，可以回退到之前的快照
+ * - 存档功能：允许玩家保存和加载游戏进度
+ *
+ * 与 Core 层的关系：
+ * - 依赖注入 SnapshotService（Core 层）
+ * - 提供 REST API 接口
+ * - 处理会话加载和验证
+ */
 @Injectable()
 export class SnapshotService {
   constructor(

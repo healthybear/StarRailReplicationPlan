@@ -78,8 +78,19 @@ export interface MultiCharacterAdvanceOptions {
 }
 
 /**
- * 剧情编排器
- * P1-SO-01~02: 串联各模块，实现剧情推进流程
+ * 故事编排器 - 核心业务逻辑协调器
+ *
+ * 职责：
+ * 1. 协调输入解析、视野过滤、角色响应、状态更新等模块
+ * 2. 管理故事推进的完整生命周期（单角色/多角色/双角色对话）
+ * 3. 处理快照创建与加载，支持状态回溯
+ * 4. 实现死胡同检测与回退机制
+ * 5. 监控各阶段性能指标（响应时间、快照数量）
+ *
+ * 核心流程：
+ * 用户输入 → 解析命令 → 过滤视野 → 生成响应 → 更新状态 → 创建快照
+ *
+ * 对应 WBS：P1-SO-01（单轮推进流程）、P1-SO-02（状态快照）、P3-SO-01（死胡同兜底）、P3-INF-01（性能监控）
  */
 @injectable()
 export class StoryOrchestrator {
@@ -104,7 +115,8 @@ export class StoryOrchestrator {
     private inputParser: InputParser,
     private characterAgent: CharacterAgent
   ) {
-    // 调试：检查所有依赖是否正确注入
+    // 依赖注入验证：确保所有核心模块都已正确注入
+    // 这些模块是故事编排器正常运行的必要依赖
     if (!storage) console.error('[StoryOrchestrator] storage is undefined');
     if (!visionManager)
       console.error('[StoryOrchestrator] visionManager is undefined');
@@ -196,7 +208,12 @@ export class StoryOrchestrator {
 
   /**
    * 初始化会话
-   * 注册人物到输入解析器
+   *
+   * 职责：
+   * 1. 将会话中的所有角色注册到输入解析器（用于角色名称识别）
+   * 2. 清空快照历史（新会话或重新加载会话时）
+   *
+   * @param session 会话状态
    */
   initializeSession(session: SessionState): void {
     const characters = Object.values(session.characters);
@@ -209,11 +226,23 @@ export class StoryOrchestrator {
 
   /**
    * 推进剧情（单角色）
+   *
+   * 这是故事推进的核心方法，完整流程包括：
+   * 1. 解析用户输入（命令/对话/角色指定）
+   * 2. 验证权限和角色有效性
+   * 3. 获取角色视野（过滤不可见信息）
+   * 4. 调用 LLM 生成角色响应
+   * 5. 更新世界状态和角色状态
+   * 6. 创建状态快照（用于回退）
+   * 7. 记录性能指标
+   *
    * P1-SO-01: 用户输入→解析→世界/信息/状态更新→Agent 调用→结果写回
+   *
    * @param session 会话状态
-   * @param userInput 用户输入
+   * @param userInput 用户输入文本
    * @param scene 当前场景配置
-   * @param triggerRules 触发规则
+   * @param triggerRules 触发规则（用于状态变更）
+   * @returns 推进结果，包含角色响应、状态变更、快照 ID、性能指标
    */
   async advance(
     session: SessionState,
@@ -222,9 +251,12 @@ export class StoryOrchestrator {
     triggerRules: TriggerRule[] = []
   ): Promise<AdvanceResult> {
     const startTime = Date.now();
-    // 1. 解析用户输入
+
+    // 步骤 1: 解析用户输入
+    // 输入解析器会识别命令类型（对话/动作/命令）、目标角色、权限验证
     const parsed = this.inputParser.parse(userInput);
 
+    // 处理无效输入
     if (parsed.type === InputType.Invalid) {
       return {
         success: false,
@@ -233,6 +265,7 @@ export class StoryOrchestrator {
       };
     }
 
+    // 处理越权请求（例如尝试控制不允许控制的角色）
     if (parsed.type === InputType.Unauthorized) {
       return {
         success: false,
@@ -241,7 +274,7 @@ export class StoryOrchestrator {
       };
     }
 
-    // 2. 获取目标角色
+    // 步骤 2: 获取目标角色
     const targetCharacter = session.characters[parsed.targetCharacterId];
     if (!targetCharacter) {
       return {
@@ -251,16 +284,18 @@ export class StoryOrchestrator {
       };
     }
 
-    // 3. 获取角色的过滤后视野
+    // 步骤 3: 获取角色的过滤后视野
+    // 视野管理器会根据信息归属规则过滤掉角色不应知道的信息
     const knownInfo = this.visionManager.getFilteredVision(
       targetCharacter.id,
       session.information
     );
 
-    // 4. 获取最近事件
+    // 步骤 4: 获取最近事件（用于上下文）
     const recentEvents = this.worldEngine.getRecentEvents(session.worldState);
 
-    // 5. 生成角色响应
+    // 步骤 5: 生成角色响应
+    // 调用 LLM 生成符合角色性格和当前情境的响应
     const response = await this.characterAgent.generateResponse(
       targetCharacter,
       scene,
@@ -269,7 +304,8 @@ export class StoryOrchestrator {
       parsed.type === InputType.Dialogue ? parsed.content : undefined
     );
 
-    // 6. 添加事件到事件链
+    // 步骤 6: 添加事件到事件链
+    // 记录本轮发生的事件，用于后续回合的上下文
     const eventId = `event_${Date.now()}`;
     this.worldEngine.addEvent(session.worldState, {
       eventId,
@@ -281,7 +317,8 @@ export class StoryOrchestrator {
           : `${targetCharacter.name}执行动作`,
     });
 
-    // 7. 处理触发规则并收集状态变更
+    // 步骤 7: 处理触发规则并收集状态变更
+    // 触发规则可能导致角色状态变化（如好感度、情绪等）
     const stateChanges: AdvanceResult['stateChanges'] = [];
     if (triggerRules.length > 0) {
       const changes = this.characterStateService.processEventWithRules(
@@ -301,9 +338,8 @@ export class StoryOrchestrator {
       }
     }
 
-    // 8. 如果是对话，可能需要更新信息（角色获得新信息）
+    // 步骤 8: 如果是对话，记录响应事件
     if (parsed.type === InputType.Dialogue && response.parsed?.dialogue) {
-      // 记录对话事件
       this.worldEngine.addEvent(session.worldState, {
         eventId: `event_response_${Date.now()}`,
         sceneId: scene.id,
@@ -312,15 +348,17 @@ export class StoryOrchestrator {
       });
     }
 
-    // 9. 推进回合
+    // 步骤 9: 推进回合
     this.worldEngine.advanceTurn(session.worldState);
 
-    // 10. 更新保存时间
+    // 步骤 10: 更新保存时间
     session.metadata.lastSaved = Date.now();
 
-    // 11. 创建状态快照（P1-SO-02）
+    // 步骤 11: 创建状态快照（P1-SO-02）
+    // 快照用于锚点对比和死胡同回退
     this.createSnapshot(session, scene);
 
+    // 性能监控：检查响应时间是否超过阈值
     const durationMs = Date.now() - startTime;
     if (
       this.responseTimeThresholdMs > 0 &&
@@ -342,10 +380,19 @@ export class StoryOrchestrator {
 
   /**
    * 推进剧情（多角色场景）
+   *
+   * 用于多个角色同时在场的场景，每个角色会根据各自的视野生成响应。
+   * 与单角色推进的区别：
+   * 1. 支持多个角色同时响应
+   * 2. 每个角色有独立的视野过滤
+   * 3. 所有角色的响应会一起返回
+   *
    * P1-SO-01: 支持多角色同时在场的场景
+   *
    * @param session 会话状态
    * @param scene 当前场景配置
-   * @param options 多角色推进选项
+   * @param options 多角色推进选项（角色列表、用户输入、触发规则）
+   * @returns 推进结果，包含所有角色的响应
    */
   async advanceMultiCharacter(
     session: SessionState,
@@ -442,12 +489,20 @@ export class StoryOrchestrator {
 
   /**
    * 双角色对话推进
+   *
+   * 专门用于两个角色之间的对话场景，特点：
+   * 1. 两个角色分别注入各自的视野（信息不对称）
+   * 2. 生成的响应会考虑双方的互动关系
+   * 3. 适用于角色间的深度对话和关系发展
+   *
    * P1-CA-03 + P1-SO-01: 两个角色分别注入各自视野后调用
+   *
    * @param session 会话状态
    * @param scene 当前场景配置
    * @param characterAId 角色 A ID
    * @param characterBId 角色 B ID
-   * @param userInput 用户输入（可选）
+   * @param userInput 用户输入（可选，用于引导对话方向）
+   * @returns 双角色对话结果
    */
   async advanceDualCharacter(
     session: SessionState,
@@ -471,6 +526,7 @@ export class StoryOrchestrator {
     }
 
     // 获取各自的过滤后视野
+    // 关键：两个角色可能知道不同的信息，这会影响对话内容
     const knownInfoA = this.visionManager.getFilteredVision(
       characterAId,
       session.information
@@ -484,6 +540,7 @@ export class StoryOrchestrator {
     const recentEvents = this.worldEngine.getRecentEvents(session.worldState);
 
     // 生成双角色响应
+    // CharacterAgent 会生成考虑双方关系和信息差异的对话
     const result = await this.characterAgent.generateDualCharacterResponses(
       characterA,
       characterB,
@@ -519,15 +576,28 @@ export class StoryOrchestrator {
 
   /**
    * 创建状态快照
+   *
+   * 快照用途：
+   * 1. 锚点对比：记录关键时刻的状态，用于分支对比
+   * 2. 死胡同回退：当剧情陷入僵局时，可以回退到之前的快照
+   * 3. 状态追踪：记录角色状态、已知信息、关系变化的历史
+   *
+   * 快照内容：
+   * - 回合数、场景 ID、情节节点 ID
+   * - 所有角色的已知信息列表
+   * - 所有角色的关系状态
+   *
    * P1-SO-02: 编排器在每轮结束后写入当前状态
+   *
    * @param session 会话状态
    * @param scene 当前场景
+   * @returns 创建的快照对象
    */
   createSnapshot(session: SessionState, scene: SceneConfig): StateSnapshot {
     const characters: AnchorCharacterState[] = [];
 
     for (const char of Object.values(session.characters)) {
-      // 收集关系状态
+      // 收集关系状态（仅记录信任度）
       const relationships: Record<string, number> = {};
       for (const [targetId, rel] of Object.entries(char.state.relationships)) {
         relationships[targetId] = rel.trust;
@@ -556,6 +626,7 @@ export class StoryOrchestrator {
     this.snapshotHistory.push(snapshot);
 
     // P3-INF-01: 超出上限时移除最旧的快照
+    // 这样可以控制内存占用，避免快照无限增长
     if (
       this.maxSnapshots > 0 &&
       this.snapshotHistory.length > this.maxSnapshots
@@ -603,16 +674,22 @@ export class StoryOrchestrator {
 
   /**
    * 添加信息到角色视野
+   *
+   * 当角色获得新信息时（通过对话、观察、推理等），需要：
+   * 1. 将信息添加到全局信息库（如果不存在）
+   * 2. 将信息添加到角色的已知信息列表
+   * 3. 更新视野管理器的索引（用于后续过滤）
+   *
    * @param session 会话状态
    * @param characterId 角色 ID
-   * @param information 信息
+   * @param information 信息对象
    */
   addInformationToCharacter(
     session: SessionState,
     characterId: string,
     information: Information
   ): void {
-    // 添加到全局信息库
+    // 添加到全局信息库（避免重复）
     const existingInfo = session.information.global.find(
       (i) => i.id === information.id
     );
@@ -630,12 +707,12 @@ export class StoryOrchestrator {
         character.state.knownInformation.push({
           informationId: information.id,
           acquiredAt: Date.now(),
-          confidence: 1,
+          confidence: 1, // 默认完全确信
         });
       }
     }
 
-    // 更新视野索引
+    // 更新视野索引（用于后续的视野过滤）
     this.visionManager.assignInformationToCharacter(
       session.information,
       characterId,

@@ -65,8 +65,22 @@ export type StateChangeListener = (
 ) => void;
 
 /**
- * 人物状态服务
- * 管理人物状态的读写和演化
+ * 人物状态服务 - 角色状态演化与约束管理
+ *
+ * 职责：
+ * 1. 管理角色状态的读写（能力、关系、性格）
+ * 2. 处理触发规则（基于事件的状态变更）
+ * 3. 应用演化约束（限制状态变化的合理性）
+ * 4. 记录状态变更历史
+ * 5. 提供状态变更监听器机制
+ *
+ * 核心功能：
+ * - 触发规则：当特定事件发生时，自动触发状态变更（如对话增加好感度）
+ * - 演化约束：限制状态变化的幅度和范围（如单次好感度变化不超过 10）
+ * - 状态历史：记录所有状态变更，用于追踪和回溯
+ * - 监听器：允许其他模块监听状态变更事件
+ *
+ * 对应 WBS：P1-CS-01（状态管理）、P1-CS-02（触发规则）、P3-CS-01（演化约束）
  */
 @injectable()
 export class CharacterStateService {
@@ -83,6 +97,12 @@ export class CharacterStateService {
 
   /**
    * 加载触发表配置
+   *
+   * 触发表定义了事件与状态变更的映射关系。
+   * 例如：当角色 A 对角色 B 说话时，B 对 A 的好感度 +5。
+   *
+   * 规则按优先级排序，高优先级规则先执行。
+   *
    * @param config 触发表配置
    */
   loadTriggerTable(config: TriggerTableConfig): void {
@@ -127,7 +147,18 @@ export class CharacterStateService {
 
   /**
    * 校验并修正数值变化（应用约束）
+   *
+   * 应用演化约束规则，确保状态变化的合理性：
+   * 1. 检查是否超出上下限（min/max）
+   * 2. 检查单次变化幅度是否过大（maxDelta）
+   * 3. 如果违反约束，自动修正为合理值
+   *
    * P3-CS-01: 合理性校验
+   *
+   * 示例：
+   * - 好感度范围 0-100，单次变化不超过 10
+   * - 如果尝试从 50 变为 80，会被修正为 60
+   *
    * @param target 目标字段（如 ability.combat）
    * @param currentValue 当前值
    * @param newValue 期望新值

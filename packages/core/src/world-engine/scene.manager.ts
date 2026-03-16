@@ -83,8 +83,33 @@ export interface SceneTransitionRecord {
 }
 
 /**
- * 场景管理服务
- * P2-WE-01: 多场景支持与场景切换
+ * 场景管理服务 - 多场景支持与场景切换
+ *
+ * 职责：
+ * 1. 管理场景定义（注册、查询、更新）
+ * 2. 管理场景切换规则（定义可达场景和切换条件）
+ * 3. 执行场景切换（验证条件、应用效果）
+ * 4. 记录场景切换历史
+ *
+ * 场景类型：
+ * - indoor: 室内场景
+ * - outdoor: 室外场景
+ * - space: 太空场景
+ * - virtual: 虚拟场景（如网络空间）
+ * - other: 其他类型
+ *
+ * 场景切换条件：
+ * - item_required: 需要特定物品（如钥匙）
+ * - character_present: 需要特定角色在场
+ * - plot_node: 需要达到特定情节节点
+ * - custom: 自定义条件
+ *
+ * 场景切换效果：
+ * - time_advance: 时间推进（如旅行耗时）
+ * - event_trigger: 触发事件（如进入新场景触发剧情）
+ * - state_change: 状态变更（如环境变化）
+ *
+ * 对应 WBS：P2-WE-01（多场景支持与场景切换）
  */
 @injectable()
 export class SceneManager {
